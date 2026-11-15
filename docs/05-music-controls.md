@@ -6,6 +6,9 @@ The expanded panel shows the current Spotify or Apple Music track (artwork, titl
 
 ## Files created / changed
 
+- `Sources/NotchLocal/Music/MusicSource.swift`
+- `Sources/NotchLocal/Music/NowPlaying.swift`
+- `Sources/NotchLocal/Music/AppleScriptRunner.swift`
 - `Sources/NotchLocal/Music/MusicController.swift`
 - `Sources/NotchLocal/Music/MusicView.swift`
 - `Sources/NotchLocal/Notch/NotchRootView.swift`

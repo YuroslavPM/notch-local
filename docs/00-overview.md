@@ -56,7 +56,8 @@ notch-local/
     App/       NotchLocalApp.swift, AppDelegate.swift
     Notch/     ScreenGeometry.swift, NotchPanel.swift, NotchViewModel.swift,
                MouseMonitor.swift, NotchShape.swift, NotchRootView.swift
-    Music/     MusicController.swift, MusicView.swift
+    Music/     MusicSource.swift, NowPlaying.swift, AppleScriptRunner.swift,
+               MusicController.swift, MusicView.swift
     Calendar/  CalendarController.swift, CalendarPeekView.swift
 ```
 
