@@ -4,6 +4,8 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: NotchPanel?
+    private var viewModel: NotchViewModel?
+    private var mouseMonitor: MouseMonitor?
     private var screenObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -24,7 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func layoutPanel() {
         guard let geometry = ScreenGeometry.current() else { return }
 
-        let hostingView = NSHostingView(rootView: NotchRootView(geometry: geometry))
+        let viewModel = existingViewModel(updating: geometry)
+        let hostingView = NSHostingView(rootView: NotchRootView(viewModel: viewModel))
         hostingView.wantsLayer = true
         hostingView.layer?.backgroundColor = NSColor.clear.cgColor
 
@@ -37,7 +40,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let panel = NotchPanel(contentRect: geometry.expandedRect)
         panel.contentView = hostingView
         panel.ignoresMouseEvents = true
-        panel.orderFrontRegardless()
         self.panel = panel
+
+        viewModel.onStateChange = { [weak panel] state in
+            panel?.ignoresMouseEvents = (state == .collapsed)
+        }
+
+        let monitor = MouseMonitor(viewModel: viewModel)
+        mouseMonitor = monitor
+        panel.orderFrontRegardless()
+        monitor.start()
+    }
+
+    private func existingViewModel(updating geometry: NotchGeometry) -> NotchViewModel {
+        if let viewModel {
+            viewModel.geometry = geometry
+            return viewModel
+        }
+        let viewModel = NotchViewModel(geometry: geometry)
+        self.viewModel = viewModel
+        return viewModel
     }
 }
