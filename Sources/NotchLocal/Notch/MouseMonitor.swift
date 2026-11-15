@@ -37,6 +37,10 @@ final class MouseMonitor {
             if g.collapsedRect.insetBy(dx: -8, dy: -4).contains(point) {
                 viewModel.expand()
             }
+        case .peek:
+            if g.peekRect.insetBy(dx: -8, dy: -4).contains(point) {
+                viewModel.expand()
+            }
         case .expanded:
             if g.expandedRect.contains(point) {
                 viewModel.cancelCollapse()

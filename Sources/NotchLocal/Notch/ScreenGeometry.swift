@@ -5,9 +5,20 @@ struct NotchGeometry {
     let notchSize: CGSize
     let hasNotch: Bool
 
-    static let expandedSize = CGSize(width: 520, height: 220)
+    static let expandedSize = CGSize(width: 520, height: 258)
+    static let contentClearance: CGFloat = 6
+
+    var contentTopInset: CGFloat { notchSize.height + Self.contentClearance }
+
+    var peekSize: CGSize {
+        CGSize(
+            width: min(max(notchSize.width + 200, 320), 420),
+            height: notchSize.height
+        )
+    }
 
     var collapsedRect: CGRect { rect(for: notchSize) }
+    var peekRect: CGRect { rect(for: peekSize) }
     var expandedRect: CGRect { rect(for: Self.expandedSize) }
 
     private func rect(for size: CGSize) -> CGRect {

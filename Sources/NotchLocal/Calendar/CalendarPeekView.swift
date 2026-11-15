@@ -19,8 +19,7 @@ struct CalendarPeekView: View {
                     Button("Open Settings") {
                         openCalendarSettings()
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.white)
+                    .modifier(GlassControlButton())
                 }
             case .granted where controller.events.isEmpty:
                 Text("No more events today")

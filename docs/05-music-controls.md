@@ -105,6 +105,7 @@ The expanded panel shows the current Spotify or Apple Music track (artwork, titl
 ## Done when
 
 - Spotify playing: title, artist and artwork appear and all three buttons work.
+- Clicking artwork or title/artist brings Spotify (or Music) to the front without launching a closed player.
 - Apple Music playing: same.
 - Neither app running: "Nothing playing", and neither app gets launched.
 - Changing track in the player updates the panel within about 1 s.

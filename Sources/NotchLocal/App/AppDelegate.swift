@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mouseMonitor: MouseMonitor?
     private var musicController: MusicController?
     private var calendarController: CalendarController?
+    private var liveActivities: LiveActivityController?
     private var screenObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -26,6 +27,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         calendarController = calendar
         calendar.start()
 
+        liveActivities = LiveActivityController()
+        music.onNowPlayingChange = { [weak self] playing in
+            self?.liveActivities?.handleMusicChange(playing)
+        }
+
         layoutPanel()
 
         screenObserver = NotificationCenter.default.addObserver(
@@ -43,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mouseMonitor?.stop()
         musicController?.shutdown()
         calendarController?.shutdown()
+        liveActivities?.shutdown()
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
             self.screenObserver = nil
@@ -101,8 +108,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.ignoresMouseEvents = true
         self.panel = panel
 
+        liveActivities?.attach(viewModel: viewModel, calendar: calendar)
+        liveActivities?.start()
+
         viewModel.onStateChange = { [weak panel, weak music, weak calendar] state in
-            panel?.ignoresMouseEvents = (state == .collapsed)
+            panel?.ignoresMouseEvents = (state != .expanded)
             music?.setActive(state == .expanded)
             if state == .expanded {
                 Task { await calendar?.requestAccessIfNeeded() }

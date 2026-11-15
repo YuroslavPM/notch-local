@@ -71,7 +71,7 @@ Below the music controls, show up to 4 upcoming events (now until the end of tom
    - `granted` with no events: "No more events today".
    - `denied`: "Calendar access is off" plus a button that opens `x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars` with `NSWorkspace.shared.open`.
 
-5. **Layout in NotchRootView.** Use a horizontal split: music on the left (about 55%), calendar on the right, separated by a thin divider. `NotchGeometry.expandedSize` is `520 × 220` so four event rows fit under the camera inset.
+5. **Layout in NotchRootView.** Use a horizontal split: music on the left (about 55%), calendar on the right, separated by a thin divider. `NotchGeometry.expandedSize` is `520 × 258` so the seek bar and four event rows fit under the camera inset.
 
 6. Run `make run`, verify, commit: `step 06: calendar peek`.
 
