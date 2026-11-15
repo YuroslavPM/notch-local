@@ -18,6 +18,10 @@ final class MusicController {
     private var lastArtworkKey: String?
     private var lastTrackKey: String?
     private var observers: [NSObjectProtocol] = []
+    private var controlTask: Task<Void, Never>?
+    private var playbackGeneration = 0
+    private var expectedPlaying: Bool?
+    private var ignoreRemoteUntil: Date?
 
     func start() {
         guard pollTask == nil else { return }
@@ -43,6 +47,8 @@ final class MusicController {
     func shutdown() {
         pollTask?.cancel()
         pollTask = nil
+        controlTask?.cancel()
+        controlTask = nil
         mediaRemote?.stopStream()
         unsubscribe()
     }
@@ -55,15 +61,37 @@ final class MusicController {
     }
 
     func playPause() {
-        Task { await sendControl(media: ["toggle-play-pause"], script: "playpause") }
+        let shouldPlay = !(nowPlaying?.isPlaying ?? false)
+        setPlayingOptimistically(shouldPlay)
+        expectedPlaying = shouldPlay
+        ignoreRemoteUntil = Date().addingTimeInterval(1.5)
+        playbackGeneration += 1
+        let generation = playbackGeneration
+        controlTask?.cancel()
+        controlTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(50))
+            guard let self, !Task.isCancelled, generation == self.playbackGeneration else { return }
+            await self.sendControl(
+                media: [shouldPlay ? "play" : "pause"],
+                script: shouldPlay ? "play" : "pause"
+            )
+            guard generation == self.playbackGeneration else { return }
+            await self.refresh()
+        }
     }
 
     func nextTrack() {
-        Task { await sendControl(media: ["next-track"], script: "next track") }
+        enqueueControl {
+            await self.sendControl(media: ["next-track"], script: "next track")
+            await self.refresh()
+        }
     }
 
     func previousTrack() {
-        Task { await sendControl(media: ["previous-track"], script: "previous track") }
+        enqueueControl {
+            await self.sendControl(media: ["previous-track"], script: "previous track")
+            await self.refresh()
+        }
     }
 
     func beginScrub(at seconds: TimeInterval) {
@@ -78,6 +106,9 @@ final class MusicController {
     func endScrub() {
         let seconds = scrubPosition
         isScrubbing = false
+        if let playing = nowPlaying, abs(seconds - playing.displayedElapsed()) < 0.45 {
+            return
+        }
         seek(to: seconds)
     }
 
@@ -89,9 +120,10 @@ final class MusicController {
             nowPlaying = playing
         }
         Task {
-            await mediaRemote?.send(["seek", String(format: "%.3f", clamped)])
             if nowPlaying?.source.usesAppleScript == true {
                 await seekWithAppleScript(clamped)
+            } else {
+                await mediaRemote?.send(["seek", String(format: "%.3f", clamped)])
             }
             await refresh()
         }
@@ -185,17 +217,42 @@ final class MusicController {
     }
 
     private func publish(_ playing: NowPlaying?) {
-        let key = playing.map(trackKey)
+        let next = reconcilePlayback(playing)
+        let key = next.map(trackKey)
         let changed = key != lastTrackKey
-        nowPlaying = playing
+        nowPlaying = next
         if playing == nil {
             artwork = nil
             lastArtworkKey = nil
         }
         lastTrackKey = key
         if changed {
-            onNowPlayingChange?(playing)
+            onNowPlayingChange?(next)
         }
+    }
+
+    private func reconcilePlayback(_ playing: NowPlaying?) -> NowPlaying? {
+        guard let expected = expectedPlaying else { return playing }
+        guard Date() < (ignoreRemoteUntil ?? .distantPast) else {
+            expectedPlaying = nil
+            return playing
+        }
+        guard var incoming = playing else { return playing }
+        if incoming.isPlaying == expected {
+            expectedPlaying = nil
+            return incoming
+        }
+        if var current = nowPlaying {
+            current.title = incoming.title
+            current.artist = incoming.artist
+            current.duration = incoming.duration
+            current.source = incoming.source
+            return current
+        }
+        incoming.isPlaying = expected
+        incoming.elapsedTime = incoming.displayedElapsed()
+        incoming.capturedAt = Date()
+        return incoming
     }
 
     private func trackKey(_ playing: NowPlaying) -> String {
@@ -220,19 +277,35 @@ final class MusicController {
         return parse(text, source: source)
     }
 
+    private func enqueueControl(_ work: @escaping @MainActor () async -> Void) {
+        let previous = controlTask
+        controlTask = Task { [weak self] in
+            await previous?.value
+            guard self != nil, !Task.isCancelled else { return }
+            await work()
+        }
+    }
+
+    private func setPlayingOptimistically(_ shouldPlay: Bool) {
+        guard var playing = nowPlaying else { return }
+        playing.elapsedTime = playing.displayedElapsed()
+        playing.capturedAt = Date()
+        playing.isPlaying = shouldPlay
+        nowPlaying = playing
+    }
+
     private func sendControl(media: [String], script: String) async {
-        await mediaRemote?.send(media)
-        if nowPlaying?.source.usesAppleScript == true || mediaRemote == nil {
-            guard let source = nowPlaying?.source ?? runningScriptableSources().first, source.usesAppleScript else {
-                await refresh()
-                return
-            }
+        let source = nowPlaying?.source ?? runningScriptableSources().first
+        if let source, source.usesAppleScript {
             let outcome = await scripts.run("tell application \"\(source.displayName)\" to \(script)")
             if outcome.errorNumber == -1743 {
                 permissionDenied = true
             }
+            return
         }
-        await refresh()
+        if mediaRemote != nil {
+            await mediaRemote?.send(media)
+        }
     }
 
     private func seekWithAppleScript(_ seconds: TimeInterval) async {

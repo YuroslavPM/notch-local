@@ -78,7 +78,7 @@ The expanded panel shows the current Spotify or Apple Music track (artwork, titl
    - Music artwork (separate call, only when the track changes): `tell application "Music" to get raw data of artwork 1 of current track`. Read `descriptor.data` into `NSImage(data:)`.
    - Wrap reads in `try ... on error return "stopped"` so a stopped player does not error.
 
-5. **Commands.** `tell application "<Spotify|Music>" to playpause`, `next track`, `previous track`. After a command, refresh immediately.
+5. **Commands.** `tell application "<Spotify|Music>" to play` or `pause` (not `playpause`), `next track`, `previous track`. After a command, refresh immediately. Do not also send `media-control` for these sources.
 
 6. **MusicController** (`@MainActor @Observable`):
    - `nowPlaying: NowPlaying?`, `artwork: NSImage?`, `permissionDenied: Bool`.
