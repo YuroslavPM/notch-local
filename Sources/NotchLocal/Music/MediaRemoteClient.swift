@@ -23,7 +23,7 @@ final class MediaRemoteClient: @unchecked Sendable {
     }
 
     func getMetadata() async -> MediaRemoteInfo? {
-        await run(arguments: ["get", "--no-artwork", "--now", "--allow-missing-title"])
+        await run(arguments: ["get", "--no-artwork", "--now", "--micros", "--allow-missing-title"])
     }
 
     func getArtwork() async -> Data? {
@@ -39,7 +39,7 @@ final class MediaRemoteClient: @unchecked Sendable {
             self.stopStreamLocked()
             let process = Process()
             process.executableURL = self.binary
-            process.arguments = ["stream", "--no-diff", "--no-artwork", "--allow-missing-title", "--debounce=250"]
+            process.arguments = ["stream", "--no-diff", "--no-artwork", "--micros", "--allow-missing-title", "--debounce=250"]
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = Pipe()
@@ -137,17 +137,41 @@ final class MediaRemoteClient: @unchecked Sendable {
         let album = payload["album"] as? String ?? ""
         let resolvedTitle = !title.isEmpty ? title : (!album.isEmpty ? album : "Now Playing")
 
+        // Prefer microsecond keys. The ISO timestamp is truncated to whole
+        // seconds and was leaving the bar about 1 s behind the player.
+        // elapsedTime is the position at timestamp; elapsedTimeNow is already
+        // live — do not add wall-clock time on top of it.
+        let timestamp = date(payload["timestampEpochMicros"]) ?? date(payload["timestamp"])
+        let snapshot = seconds(payload, micros: "elapsedTimeMicros", seconds: "elapsedTime")
+        let live = seconds(payload, micros: "elapsedTimeNowMicros", seconds: "elapsedTimeNow")
+        let elapsed: Double
+        let capturedAt: Date
+        if let snapshot {
+            elapsed = snapshot
+            capturedAt = timestamp ?? Date()
+        } else {
+            elapsed = live ?? 0
+            capturedAt = Date()
+        }
+
         return MediaRemoteInfo(
             bundleIdentifier: bundle,
             parentBundleIdentifier: payload["parentApplicationBundleIdentifier"] as? String,
             title: resolvedTitle,
             artist: artist,
             isPlaying: bool(payload["playing"]) ?? false,
-            elapsedTime: number(payload["elapsedTimeNow"]) ?? number(payload["elapsedTime"]) ?? 0,
-            duration: number(payload["duration"]) ?? 0,
-            capturedAt: date(payload["timestamp"]) ?? Date(),
+            elapsedTime: elapsed,
+            duration: seconds(payload, micros: "durationMicros", seconds: "duration") ?? 0,
+            capturedAt: capturedAt,
             artworkData: dataValue(payload["artworkData"])
         )
+    }
+
+    private static func seconds(_ payload: [String: Any], micros: String, seconds: String) -> Double? {
+        if let value = number(payload[micros]) {
+            return value / 1_000_000
+        }
+        return number(payload[seconds])
     }
 
     private static func number(_ value: Any?) -> Double? {
@@ -165,12 +189,22 @@ final class MediaRemoteClient: @unchecked Sendable {
     }
 
     private static func date(_ value: Any?) -> Date? {
+        if let value = number(value) {
+            if value > 1_000_000_000_000_000 {
+                return Date(timeIntervalSince1970: value / 1_000_000)
+            }
+            if value > 1_000_000_000_000 {
+                return Date(timeIntervalSince1970: value / 1_000)
+            }
+            return Date(timeIntervalSince1970: value)
+        }
         guard let value = value as? String else { return nil }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        if let date = formatter.date(from: value) { return date }
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: value)
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = fractional.date(from: value) { return date }
+        let whole = ISO8601DateFormatter()
+        whole.formatOptions = [.withInternetDateTime]
+        return whole.date(from: value)
     }
 
     private static func dataValue(_ value: Any?) -> Data? {

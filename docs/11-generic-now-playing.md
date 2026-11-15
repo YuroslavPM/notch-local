@@ -20,7 +20,7 @@ The expanded panel shows whatever macOS reports as Now Playing: Spotify, Apple M
    ```
    The app looks for `/opt/homebrew/bin/media-control` then `/usr/local/bin/media-control`. It does not launch closed players.
 
-2. **MediaRemoteClient.** Run `media-control get --no-artwork --now --allow-missing-title` and `stream --no-diff --no-artwork --allow-missing-title` off the main thread. Read the process pipe **before** `waitUntilExit` so large `artworkData` cannot deadlock. Parse JSON (`bundleIdentifier`, `parentApplicationBundleIdentifier`, `playing`, `title`, `artist`, `elapsedTime` / `elapsedTimeNow`, `duration`, `artworkData`). Send `toggle-play-pause`, `next-track`, `previous-track`, and `seek`. Fetch artwork with a separate `get` when the track changes.
+2. **MediaRemoteClient.** Run `media-control get --no-artwork --now --micros --allow-missing-title` and `stream --no-diff --no-artwork --micros --allow-missing-title` off the main thread. Read the process pipe **before** `waitUntilExit` so large `artworkData` cannot deadlock. Parse JSON (`bundleIdentifier`, `parentApplicationBundleIdentifier`, `playing`, `title`, `artist`, `elapsedTimeMicros` / `timestampEpochMicros` / `durationMicros`, `artworkData`). Use `elapsedTime` at `timestamp` and interpolate in the UI. Prefer `--micros`: the ISO `timestamp` is truncated to whole seconds and leaves the bar ~1 s off. Do **not** combine `elapsedTimeNow` with `timestamp` — that value is already live and would run the bar at ~2× until it pins at duration. Fall back to `elapsedTimeNow` only when `elapsedTime` is missing, and treat it as captured at `Date()`. Send `toggle-play-pause`, `next-track`, `previous-track`, and `seek` in seconds. Fetch artwork with a separate `get` when the track changes.
 
 3. Prefer MediaRemote when it reports a title. If `get` returns `null` or fails, fall back to Spotify / Music AppleScript so those players keep working.
 
@@ -32,7 +32,7 @@ The expanded panel shows whatever macOS reports as Now Playing: Spotify, Apple M
 
 - YouTube in Safari or Chrome shows title (and artwork when the system provides it) and the three buttons work.
 - Spotify and Apple Music still work if `media-control` is missing or stalls.
-- The progress bar moves while playing; dragging it seeks.
+- The progress bar moves in sync with the track; it does not race ahead and stick at the end. Dragging it seeks.
 - Closed players are not launched.
 
 ## Pitfalls
