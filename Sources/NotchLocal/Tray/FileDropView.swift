@@ -5,7 +5,7 @@ final class FileDropView: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        registerForDraggedTypes([.fileURL])
+        registerForDraggedTypes([.fileURL, FileDragPasteboard.filenamesType])
         wantsLayer = true
         layer?.backgroundColor = NSColor.clear.cgColor
     }
@@ -16,10 +16,8 @@ final class FileDropView: NSView {
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
-        if FileDragPasteboard.isDraggingFiles {
-            return super.hitTest(point)
-        }
-        return nil
+        guard FileDragPasteboard.isDraggingFiles else { return nil }
+        return super.hitTest(point)
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
@@ -33,6 +31,10 @@ final class FileDropView: NSView {
 
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
         draggingEntered(sender)
+    }
+
+    override func prepareForDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        accepts(sender)
     }
 
     override func draggingExited(_ sender: NSDraggingInfo?) {

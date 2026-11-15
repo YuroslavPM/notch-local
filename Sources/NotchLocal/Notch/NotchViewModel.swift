@@ -49,6 +49,19 @@ final class NotchViewModel {
         isFileDragActive = false
     }
 
+    func collapseNow() {
+        cancelCollapse()
+        cancelPeek()
+        isFileDragActive = false
+        currentPeek = nil
+        guard state != .collapsed else {
+            onStateChange?(.collapsed)
+            return
+        }
+        state = .collapsed
+        onStateChange?(.collapsed)
+    }
+
     func scheduleCollapse() {
         guard state == .expanded, collapseTask == nil, !isFileDragActive else { return }
         collapseTask = Task { [weak self] in

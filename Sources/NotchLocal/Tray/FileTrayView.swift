@@ -21,54 +21,91 @@ struct FileTrayView: View {
     }
 
     private var emptyShelf: some View {
-        Text("Drop files")
-            .font(.caption)
-            .foregroundStyle(.white.opacity(0.7))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VStack(spacing: 2) {
+            Text("Drop files")
+                .font(.caption.weight(.medium))
+            Text("or click to browse")
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .foregroundStyle(.white.opacity(0.85))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: controller.chooseFiles)
     }
 
     private var filledShelf: some View {
         HStack(spacing: 8) {
-            ForEach(controller.items) { item in
-                icon(for: item)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 8) {
+                    ForEach(controller.items) { item in
+                        fileCell(item)
+                    }
+                }
+                .padding(.vertical, 4)
             }
-            Spacer(minLength: 0)
+            addMoreButton
+            sendAllButton
         }
         .padding(.horizontal, 8)
+        .padding(.vertical, 4)
     }
 
-    private func icon(for item: TrayItem) -> some View {
+    private var addMoreButton: some View {
+        Button(action: controller.chooseFiles) {
+            VStack(spacing: 3) {
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("Add")
+                    .font(.caption2.weight(.medium))
+            }
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(width: 52, height: 56)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Choose more files")
+    }
+
+    private func fileCell(_ item: TrayItem) -> some View {
         let missing = controller.isMissing(item)
-        let showAirDrop = controller.hoveredID == item.id && controller.canAirDrop(item)
 
-        return ZStack {
-            Image(nsImage: controller.icon(for: item))
-                .resizable()
-                .interpolation(.high)
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 32, height: 32)
-                .opacity(missing ? 0.4 : 1)
-
-            if showAirDrop {
+        return VStack(spacing: 3) {
+            ZStack(alignment: .topTrailing) {
                 Button {
-                    controller.airDrop(item)
+                    controller.open(item)
                 } label: {
-                    Image(systemName: "airdrop")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    Image(nsImage: controller.icon(for: item))
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 28, height: 28)
+                        .opacity(missing ? 0.4 : 1)
+                        .frame(width: 36, height: 32)
                 }
                 .buttonStyle(.plain)
+                .disabled(missing)
+
+                Button {
+                    controller.remove(id: item.id)
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, Color.black.opacity(0.72))
+                }
+                .buttonStyle(.plain)
+                .offset(x: 2, y: -2)
+                .help("Remove")
             }
-        }
-        .frame(width: 32, height: 32)
-        .help(item.name)
-        .onHover { hovering in
-            controller.setHovered(hovering ? item.id : nil)
-        }
-        .onTapGesture {
-            controller.open(item)
+
+            Text(item.name)
+                .font(.caption2)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundStyle(.white.opacity(missing ? 0.45 : 0.85))
+                .frame(width: 56)
+                .help(item.name)
         }
         .onDrag {
             controller.dragProvider(for: item)
@@ -86,6 +123,23 @@ struct FileTrayView: View {
                 controller.remove(id: item.id)
             }
         }
+    }
+
+    private var sendAllButton: some View {
+        Button(action: controller.airDropAll) {
+            VStack(spacing: 3) {
+                Image(systemName: "airdrop")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("Send all")
+                    .font(.caption2.weight(.medium))
+            }
+            .foregroundStyle(.white.opacity(controller.canAirDropAll ? 0.95 : 0.35))
+            .frame(width: 52)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!controller.canAirDropAll)
+        .help("AirDrop every file in the tray")
     }
 
     private var shelfBackground: Color {

@@ -113,7 +113,7 @@ struct NotchRootView: View {
             }
             .frame(maxHeight: .infinity, alignment: .top)
             FileTrayView(controller: trayController)
-                .frame(height: 44)
+                .frame(height: 72)
         }
     }
 }

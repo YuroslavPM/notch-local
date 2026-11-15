@@ -7,8 +7,10 @@ final class FileTrayController {
     private(set) var items: [TrayItem] = []
     private(set) var isTargeted = false
     private(set) var hoveredID: UUID?
+    private(set) var isPickingFiles = false
 
     let airDrop = AirDropService()
+    var onPickingFiles: ((Bool) -> Void)?
 
     private let store = FileTrayStore()
     private var urls: [UUID: URL] = [:]
@@ -104,6 +106,67 @@ final class FileTrayController {
     func airDrop(_ item: TrayItem) {
         guard let url = urls[item.id] else { return }
         airDrop.share(url)
+    }
+
+    var shareableURLs: [URL] {
+        items.compactMap { item in
+            guard let url = urls[item.id], !missing.contains(item.id), airDrop.canShare(url) else {
+                return nil
+            }
+            return url
+        }
+    }
+
+    var canAirDropAll: Bool {
+        !shareableURLs.isEmpty
+    }
+
+    func airDropAll() {
+        airDrop.share(urls: shareableURLs)
+    }
+
+    func chooseFiles() {
+        guard !isPickingFiles else { return }
+        isPickingFiles = true
+
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.canCreateDirectories = false
+        panel.prompt = "Add"
+        panel.message = "Choose files to keep in the notch"
+        panel.level = .modalPanel
+        if let screen = NSScreen.main {
+            let visible = screen.visibleFrame
+            let size = panel.frame.size
+            panel.setFrameOrigin(
+                NSPoint(
+                    x: visible.midX - size.width / 2,
+                    y: visible.minY + max((visible.height - size.height) / 2 - 48, 24)
+                )
+            )
+        }
+
+        let restoreAccessory = NSApp.activationPolicy() == .accessory
+        if restoreAccessory {
+            NSApp.setActivationPolicy(.regular)
+        }
+        NSApp.activate()
+        onPickingFiles?(true)
+
+        panel.begin { [weak self] result in
+            Task { @MainActor in
+                if restoreAccessory {
+                    NSApp.setActivationPolicy(.accessory)
+                }
+                self?.isPickingFiles = false
+                self?.onPickingFiles?(false)
+                if result == .OK {
+                    self?.add(urls: panel.urls)
+                }
+            }
+        }
     }
 
     func dragProvider(for item: TrayItem) -> NSItemProvider {

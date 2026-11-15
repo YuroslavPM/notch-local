@@ -5,9 +5,9 @@ struct NotchGeometry {
     let notchSize: CGSize
     let hasNotch: Bool
 
-    static let expandedSize = CGSize(width: 520, height: 310)
+    static let expandedSize = CGSize(width: 520, height: 338)
     static let contentClearance: CGFloat = 6
-    static let dropMagnetPadding: CGFloat = 24
+    static let dropMagnetPadding: CGFloat = 80
 
     var contentTopInset: CGFloat { notchSize.height + Self.contentClearance }
 

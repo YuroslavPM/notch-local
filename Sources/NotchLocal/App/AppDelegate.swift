@@ -105,6 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.setFrame(geometry.expandedRect, display: true)
             panel.contentView = content
             tray.airDrop.sourceWindow = panel
+            bindFilePicker(tray: tray, panel: panel, viewModel: viewModel)
             return
         }
 
@@ -113,6 +114,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.ignoresMouseEvents = true
         self.panel = panel
         tray.airDrop.sourceWindow = panel
+
+        bindFilePicker(tray: tray, panel: panel, viewModel: viewModel)
 
         liveActivities?.attach(viewModel: viewModel, calendar: calendar)
         liveActivities?.start()
@@ -125,7 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        let monitor = MouseMonitor(viewModel: viewModel)
+        let monitor = MouseMonitor(viewModel: viewModel, tray: tray)
         mouseMonitor = monitor
         panel.orderFrontRegardless()
         monitor.start()
@@ -165,6 +168,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return tray
     }
 
+    private func bindFilePicker(tray: FileTrayController, panel: NotchPanel, viewModel: NotchViewModel) {
+        tray.onPickingFiles = { [weak panel, weak viewModel] picking in
+            if picking {
+                viewModel?.collapseNow()
+                panel?.orderOut(nil)
+            } else {
+                viewModel?.collapseNow()
+                panel?.orderFrontRegardless()
+            }
+        }
+    }
+
     private func makeContentView(
         geometry: NotchGeometry,
         viewModel: NotchViewModel,
@@ -186,14 +201,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let bounds = NSRect(origin: .zero, size: NotchGeometry.expandedSize)
         hostingView.frame = bounds
 
-        let dropView = FileDropView(frame: bounds)
+        let shelfHeight: CGFloat = 96
+        let dropView = FileDropView(
+            frame: NSRect(x: 0, y: 0, width: bounds.width, height: shelfHeight)
+        )
         dropView.controller = tray
 
         let container = NSView(frame: bounds)
         container.wantsLayer = true
         container.layer?.backgroundColor = NSColor.clear.cgColor
         hostingView.autoresizingMask = [.width, .height]
-        dropView.autoresizingMask = [.width, .height]
+        dropView.autoresizingMask = [.width, .maxYMargin]
         container.addSubview(hostingView)
         container.addSubview(dropView)
         return container

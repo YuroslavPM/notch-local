@@ -42,9 +42,9 @@ Do not copy Boring Notch. Public APIs only: `NSPasteboard`, `NSDraggingInfo`, `N
 
 ## Steps
 
-1. **Drag-hold expand.** Add `.leftMouseUp` to `MouseMonitor`. When the drag pasteboard can read `NSURL` objects with `.fileURL`, and the pointer is inside `geometry.dropMagnetRect`, call `viewModel.beginFileDrag()`. That expands, sets `isFileDragActive = true`, and skips `scheduleCollapse` until `endFileDrag()` on mouse-up. `AppDelegate` already sets `ignoresMouseEvents = (state != .expanded)`; keep that.
+1. **Drag-hold expand.** Add `.leftMouseUp` to `MouseMonitor`. When the drag pasteboard has files (`public.file-url` or Finder's `NSFilenamesPboardType`) and the pointer is inside `geometry.dropMagnetRect`, call `viewModel.beginFileDrag()`. That expands, sets `isFileDragActive = true`, and skips `scheduleCollapse` until `endFileDrag()` on mouse-up. Snapshot the file URLs during the drag and add them on mouse-up over the panel — a click-through `NSPanel` often never receives AppKit `performDragOperation`. `AppDelegate` already sets `ignoresMouseEvents = (state != .expanded)`; keep that.
 
-2. **Geometry.** Grow `NotchGeometry.expandedSize` height by about 52 pt (shelf row + padding). Add `dropMagnetRect`: same width as the expanded panel, from the top of the screen down through the shelf, plus ~24 pt below. Music and calendar layout stay the same; the shelf sits under the divider.
+2. **Geometry.** Grow `NotchGeometry.expandedSize` height by about 52 pt (shelf row + padding). Add `dropMagnetRect`: same width as the expanded panel, from the top of the screen down through the shelf, plus ~80 pt below so the panel opens before the cursor arrives. Music and calendar layout stay the same; the shelf sits under the divider.
 
 3. **TrayItem / FileTrayStore.** One type per file.
    - `TrayItem`: `id: UUID`, `bookmark: Data`, `name: String`, `addedAt: Date`.
@@ -60,10 +60,10 @@ Do not copy Boring Notch. Public APIs only: `NSPasteboard`, `NSDraggingInfo`, `N
 5. **FileTrayController** (`@Observable`, `@MainActor`). Load store at start. `add(urls:)`, `remove(id:)`, `resolvedURL(for:)`, `icon(for:)`. Icons from `NSWorkspace.shared.icon(forFile:)`. Open with `NSWorkspace.shared.open`. Reveal with `activateFileViewerSelecting`.
 
 6. **FileTrayView.** Bottom of `expandedContent`:
-   - Empty: dashed “Drop files” zone.
-   - Filled: horizontal icon shelf. Click opens. Drag out with `NSItemProvider(contentsOf:)`. Do **not** remove on drag-out (copy, not move).
+   - Empty: dashed “Drop files or click to browse” zone. Click opens `NSOpenPanel` (files and folders, multiple selection).
+   - Filled: horizontal icon shelf with the file name under each icon and an X to remove. Click opens. Drag out with `NSItemProvider(contentsOf:)`. Do **not** remove on drag-out (copy, not move).
+   - **Send all** AirDrops every shareable file in the tray.
    - Context menu: Open, Reveal in Finder, AirDrop, Remove.
-   - Hover overlay: AirDrop button on the icon.
 
 7. **AirDropService.**
    ```swift
@@ -88,13 +88,15 @@ Do not copy Boring Notch. Public APIs only: `NSPasteboard`, `NSDraggingInfo`, `N
 
 ## Pitfalls
 
-- **Click-through vs drop.** Never leave `ignoresMouseEvents = true` during an active file drag. Never leave it `false` after mouse-up if the panel has collapsed.
+- **Click-through vs drop.** Never leave `ignoresMouseEvents = true` during an active file drag. Never leave it `false` after mouse-up if the panel has collapsed. Finder will not hand the drag to a window that was click-through when the cursor entered it — capture URLs on `leftMouseDragged` and add them on `leftMouseUp` over the magnet.
+- **Selecting is not dropping.** Clicking a file in Finder does nothing. Hold, drag toward the notch until the shelf highlights, then release.
 - **Collapse timer.** `scheduleCollapse` must not fire while `isFileDragActive`.
-- **Pasteboard name.** Use `NSPasteboard(name: .drag)`, not the general pasteboard. The drag pasteboard is empty when the user is not dragging.
+- **Pasteboard name.** Use `NSPasteboard(name: .drag)`, not the general pasteboard. Finder often uses `NSFilenamesPboardType` instead of `public.file-url`.
 - **File URLs only.** Finder also puts filenames on the pasteboard; persist `URL`s, not path strings, so iCloud / spaces / non-ASCII names survive.
 - **Promised files.** `NSFilePromiseReceiver` is a later slice. Reject them rather than hanging `performDragOperation`.
 - **AirDrop items.** Pass `URL` objects. Path `String`s fail `canPerform`. Folders work; app bundles work; unsaved documents without a file URL do not.
-- **Accessory + picker.** The AirDrop UI needs a key-capable window. `NotchPanel.canBecomeKey` is already `true`. Call `NSApp.activate` before `perform(withItems:)`.
+- **Accessory + picker.** `LSUIElement` apps do not show `NSOpenPanel.runModal()`. Switch to `.regular` briefly, `NSApp.activate()`, then `begin`. Hide the notch (`orderOut`) while picking — it sits at status-bar level and covers the Open dialog. Restore `.accessory` and `orderFrontRegardless` when the panel closes. AirDrop also needs a key-capable window.
+- **Stale drag pasteboard.** Finder leaves file URLs on `NSPasteboard(name: .drag)` after mouse-up. `isDraggingFiles` must require the left mouse button to be down, or the overlay steals clicks (browse, X, Send all). Only add files when the drag **started outside** the expanded panel — a click next to an existing icon is not a drop.
 - **Bookmark I/O off the main actor.** Resolve and write JSON in a detached task; publish results on `@MainActor`. No force unwraps on `Application Support` or bookmark resolution.
 - **Height vs glass.** Growing `expandedSize` changes the always-on panel frame. Keep the window sized to the expanded rect; only the `NotchShape` clip grows.
 - **Duplicates.** Dropping the same file twice should not add a second icon.

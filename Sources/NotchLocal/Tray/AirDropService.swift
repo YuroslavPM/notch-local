@@ -12,13 +12,20 @@ final class AirDropService: NSObject, NSSharingServiceDelegate {
     }
 
     func share(_ url: URL) {
-        guard let service = NSSharingService(named: .sendViaAirDrop), canShare(url) else {
+        share(urls: [url])
+    }
+
+    func share(urls: [URL]) {
+        let items = urls.filter(canShare)
+        guard !items.isEmpty,
+              let service = NSSharingService(named: .sendViaAirDrop),
+              service.canPerform(withItems: items) else {
             return
         }
         NSApp.activate()
         sourceWindow?.makeKeyAndOrderFront(nil)
         service.delegate = self
-        service.perform(withItems: [url])
+        service.perform(withItems: items)
     }
 
     func sharingService(
