@@ -12,6 +12,7 @@ final class NotchViewModel {
 
     private(set) var state: State = .collapsed
     private(set) var currentPeek: LivePeek?
+    private(set) var isFileDragActive = false
     var geometry: NotchGeometry
     var onStateChange: ((State) -> Void)?
 
@@ -39,8 +40,30 @@ final class NotchViewModel {
         schedulePeekDismiss()
     }
 
+    func beginFileDrag() {
+        isFileDragActive = true
+        expand()
+    }
+
+    func endFileDrag() {
+        isFileDragActive = false
+    }
+
+    func collapseNow() {
+        cancelCollapse()
+        cancelPeek()
+        isFileDragActive = false
+        currentPeek = nil
+        guard state != .collapsed else {
+            onStateChange?(.collapsed)
+            return
+        }
+        state = .collapsed
+        onStateChange?(.collapsed)
+    }
+
     func scheduleCollapse() {
-        guard state == .expanded, collapseTask == nil else { return }
+        guard state == .expanded, collapseTask == nil, !isFileDragActive else { return }
         collapseTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled, let self else { return }

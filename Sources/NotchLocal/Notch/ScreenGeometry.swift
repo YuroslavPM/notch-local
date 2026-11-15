@@ -5,8 +5,9 @@ struct NotchGeometry {
     let notchSize: CGSize
     let hasNotch: Bool
 
-    static let expandedSize = CGSize(width: 520, height: 258)
+    static let expandedSize = CGSize(width: 520, height: 338)
     static let contentClearance: CGFloat = 6
+    static let dropMagnetPadding: CGFloat = 80
 
     var contentTopInset: CGFloat { notchSize.height + Self.contentClearance }
 
@@ -20,6 +21,15 @@ struct NotchGeometry {
     var collapsedRect: CGRect { rect(for: notchSize) }
     var peekRect: CGRect { rect(for: peekSize) }
     var expandedRect: CGRect { rect(for: Self.expandedSize) }
+    var dropMagnetRect: CGRect {
+        let r = expandedRect
+        return CGRect(
+            x: r.minX,
+            y: r.minY - Self.dropMagnetPadding,
+            width: r.width,
+            height: r.height + Self.dropMagnetPadding
+        )
+    }
 
     private func rect(for size: CGSize) -> CGRect {
         let f = screen.frame

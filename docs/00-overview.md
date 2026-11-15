@@ -6,6 +6,7 @@ NotchLocal is a menu bar app that draws a panel exactly over the MacBook notch. 
 
 1. Music controls for whatever macOS reports as Now Playing (Spotify, Apple Music, YouTube in a browser, Podcasts, …)
 2. The next few calendar events
+3. A file shelf: drop files onto the notch, drag them back out, or AirDrop them
 
 While collapsed, the notch can briefly widen for a live peek: a new track, a meeting in the next 5 minutes, or a battery warning.
 
@@ -20,9 +21,10 @@ In scope:
 - Any Now Playing source via `media-control`, with Spotify / Music AppleScript fallback
 - Upcoming events via EventKit
 - Collapsed live peeks (track change, meeting, battery)
+- File tray with persistent bookmarks and AirDrop
 - Menu bar icon with Restart / Quit
 
-Out of scope (see `09-roadmap.md`): file tray, HUD replacement, live activities, AirDrop, clipboard history, generic "Now Playing" for browsers, launch at login, settings window.
+Out of scope until their guides are implemented (see `09-roadmap.md`): HUD replacement, clipboard history, launch at login, settings window.
 
 ## Key decisions
 
@@ -43,6 +45,8 @@ flowchart TB
   Mouse --> VM
   Root --> MusicView --> MusicController --> AppleScript
   Root --> CalendarPeekView --> CalendarController --> EventKit
+  Root --> FileTrayView --> FileTrayController --> Bookmarks
+  FileTrayController --> AirDrop[NSSharingService AirDrop]
 ```
 
 The panel window is always the size of the **expanded** frame but fully transparent. Only the notch shape is drawn (Liquid Glass when expanded on macOS 26+, black otherwise). While collapsed, `ignoresMouseEvents = true` so the window never blocks clicks. A global mouse monitor detects the pointer entering the notch, expands the view model, and turns mouse events back on.
@@ -54,7 +58,7 @@ notch-local/
   README.md  AGENTS.md  .gitignore  Makefile  Package.swift
   Resources/Info.plist
   scripts/build-app.sh
-  docs/00..09
+  docs/00..12
   Sources/NotchLocal/
     App/       NotchLocalApp.swift, AppDelegate.swift
     Notch/     ScreenGeometry.swift, NotchPanel.swift, NotchViewModel.swift,
@@ -64,6 +68,9 @@ notch-local/
     Music/     MusicSource.swift, NowPlaying.swift, AppleScriptRunner.swift,
                MediaRemoteClient.swift, MusicController.swift, MusicView.swift
     Calendar/  CalendarController.swift, CalendarPeekView.swift
+    Tray/      TrayItem.swift, ResolvedBookmark.swift, FileTrayStore.swift,
+               FileTrayController.swift, FileDropView.swift, FileDragPasteboard.swift,
+               AirDropService.swift, FileTrayView.swift
 ```
 
 ## Step order
@@ -77,6 +84,9 @@ notch-local/
 7. [07 - Menu bar and lifecycle](07-menu-bar-and-lifecycle.md)
 8. [08 - Testing checklist](08-testing-checklist.md)
 9. [09 - Roadmap](09-roadmap.md)
+10. [10 - File tray and AirDrop](10-file-tray.md)
+11. [11 - Generic Now Playing](11-generic-now-playing.md)
+12. [12 - Live activity sneak peeks](12-live-activities.md)
 
 ## Working with Cursor
 

@@ -1,6 +1,6 @@
 # NotchLocal
 
-A personal, local-only macOS app that turns the MacBook notch into a small control panel, inspired by NotchNook. Hover the notch and it expands to show what is playing (any Now Playing source) and your next calendar events. While collapsed it can peek a new track, an upcoming meeting, or a battery warning.
+A personal, local-only macOS app that turns the MacBook notch into a small control panel, inspired by NotchNook. Hover the notch and it expands to show what is playing (any Now Playing source), your next calendar events, and a file shelf you can drop onto or AirDrop from. While collapsed it can peek a new track, an upcoming meeting, or a battery warning.
 
 Built with Swift 6, SwiftUI and AppKit using Swift Package Manager. Xcode is not required.
 
