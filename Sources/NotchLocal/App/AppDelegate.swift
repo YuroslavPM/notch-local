@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var viewModel: NotchViewModel?
     private var mouseMonitor: MouseMonitor?
     private var musicController: MusicController?
+    private var calendarController: CalendarController?
     private var screenObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -15,6 +16,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let music = MusicController()
         musicController = music
         music.start()
+
+        let calendar = CalendarController()
+        calendarController = calendar
+        calendar.start()
+
         layoutPanel()
 
         screenObserver = NotificationCenter.default.addObserver(
@@ -30,15 +36,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func layoutPanel() {
         guard let geometry = ScreenGeometry.current() else { return }
-        let music = musicController ?? MusicController()
-        if musicController == nil {
-            musicController = music
-            music.start()
-        }
-
+        let music = resolvedMusicController()
+        let calendar = resolvedCalendarController()
         let viewModel = existingViewModel(updating: geometry)
+
         let hostingView = NSHostingView(
-            rootView: NotchRootView(viewModel: viewModel, musicController: music)
+            rootView: NotchRootView(
+                viewModel: viewModel,
+                musicController: music,
+                calendarController: calendar
+            )
         )
         hostingView.wantsLayer = true
         hostingView.layer?.backgroundColor = NSColor.clear.cgColor
@@ -54,9 +61,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.ignoresMouseEvents = true
         self.panel = panel
 
-        viewModel.onStateChange = { [weak panel, weak music] state in
+        viewModel.onStateChange = { [weak panel, weak music, weak calendar] state in
             panel?.ignoresMouseEvents = (state == .collapsed)
             music?.setActive(state == .expanded)
+            if state == .expanded {
+                Task { await calendar?.requestAccessIfNeeded() }
+            }
         }
 
         let monitor = MouseMonitor(viewModel: viewModel)
@@ -73,5 +83,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let viewModel = NotchViewModel(geometry: geometry)
         self.viewModel = viewModel
         return viewModel
+    }
+
+    private func resolvedMusicController() -> MusicController {
+        if let musicController { return musicController }
+        let music = MusicController()
+        musicController = music
+        music.start()
+        return music
+    }
+
+    private func resolvedCalendarController() -> CalendarController {
+        if let calendarController { return calendarController }
+        let calendar = CalendarController()
+        calendarController = calendar
+        calendar.start()
+        return calendar
     }
 }

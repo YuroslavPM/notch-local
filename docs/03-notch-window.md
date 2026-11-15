@@ -23,7 +23,7 @@ A transparent, always-on-top panel pinned to the top center of the screen that d
        let notchSize: CGSize
        let hasNotch: Bool
 
-       static let expandedSize = CGSize(width: 520, height: 190)
+       static let expandedSize = CGSize(width: 520, height: 220)
 
        var collapsedRect: CGRect { rect(for: notchSize) }
        var expandedRect: CGRect { rect(for: Self.expandedSize) }
