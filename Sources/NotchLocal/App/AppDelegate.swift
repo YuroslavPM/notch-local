@@ -13,6 +13,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
+        if shouldYieldToExistingInstance() {
+            NSApp.terminate(nil)
+            return
+        }
+
         let music = MusicController()
         musicController = music
         music.start()
@@ -32,6 +37,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.layoutPanel()
             }
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        mouseMonitor?.stop()
+        musicController?.shutdown()
+        calendarController?.shutdown()
+        if let screenObserver {
+            NotificationCenter.default.removeObserver(screenObserver)
+            self.screenObserver = nil
+        }
+        panel?.close()
+        panel = nil
+    }
+
+    func restart() {
+        let url = Bundle.main.bundleURL
+        let config = NSWorkspace.OpenConfiguration()
+        config.createsNewApplicationInstance = true
+        config.arguments = ["--restarted"]
+        NSWorkspace.shared.openApplication(at: url, configuration: config) { _, _ in
+            Task { @MainActor in
+                NSApp.terminate(nil)
+            }
+        }
+    }
+
+    private func shouldYieldToExistingInstance() -> Bool {
+        if CommandLine.arguments.contains("--restarted") {
+            return false
+        }
+        let me = NSRunningApplication.current
+        let others = NSRunningApplication
+            .runningApplications(withBundleIdentifier: "com.yuroslav.notchlocal")
+            .filter { $0.processIdentifier != me.processIdentifier }
+        return !others.isEmpty
     }
 
     private func layoutPanel() {
