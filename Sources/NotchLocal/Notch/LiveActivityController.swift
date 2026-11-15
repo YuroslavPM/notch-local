@@ -1,6 +1,5 @@
 import EventKit
 import Foundation
-import IOKit.ps
 import Observation
 
 @MainActor
@@ -8,15 +7,17 @@ import Observation
 final class LiveActivityController {
     private var viewModel: NotchViewModel?
     private var calendar: CalendarController?
+    private var battery: BatteryMonitor?
     private var pollTask: Task<Void, Never>?
     private var lastMusicKey: String?
     private var announcedMeetings: Set<String> = []
     private var wasCharging: Bool?
     private var announcedLowBattery = false
 
-    func attach(viewModel: NotchViewModel, calendar: CalendarController) {
+    func attach(viewModel: NotchViewModel, calendar: CalendarController, battery: BatteryMonitor) {
         self.viewModel = viewModel
         self.calendar = calendar
+        self.battery = battery
     }
 
     func start() {
@@ -63,42 +64,20 @@ final class LiveActivityController {
     }
 
     private func checkBattery() {
-        guard let snapshot = Self.readBattery() else { return }
-        if wasCharging == false && snapshot.charging {
-            viewModel?.showPeek(.battery(percent: snapshot.percent, charging: true))
+        battery?.refresh()
+        guard let percent = battery?.percent else { return }
+        let charging = battery?.isCharging ?? false
+        if wasCharging == false && charging {
+            viewModel?.showPeek(.battery(percent: percent, charging: true))
         }
-        if snapshot.percent <= 20 && !snapshot.charging {
+        if percent <= 20 && !charging {
             if !announcedLowBattery {
                 announcedLowBattery = true
-                viewModel?.showPeek(.battery(percent: snapshot.percent, charging: false))
+                viewModel?.showPeek(.battery(percent: percent, charging: false))
             }
-        } else if snapshot.percent > 25 {
+        } else if percent > 25 {
             announcedLowBattery = false
         }
-        wasCharging = snapshot.charging
-    }
-
-    private struct BatterySnapshot {
-        var percent: Int
-        var charging: Bool
-    }
-
-    private static func readBattery() -> BatterySnapshot? {
-        guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else { return nil }
-        guard let list = IOPSCopyPowerSourcesList(blob)?.takeRetainedValue() as? [CFTypeRef] else {
-            return nil
-        }
-        for source in list {
-            guard let info = IOPSGetPowerSourceDescription(blob, source)?.takeUnretainedValue() as? [String: Any] else {
-                continue
-            }
-            let type = info[kIOPSTypeKey as String] as? String
-            guard type == kIOPSInternalBatteryType as String else { continue }
-            let percent = info[kIOPSCurrentCapacityKey as String] as? Int
-                ?? Int(info[kIOPSCurrentCapacityKey as String] as? Double ?? 0)
-            let charging = info[kIOPSIsChargingKey as String] as? Bool ?? false
-            return BatterySnapshot(percent: percent, charging: charging)
-        }
-        return nil
+        wasCharging = charging
     }
 }

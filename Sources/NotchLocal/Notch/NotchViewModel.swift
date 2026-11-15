@@ -32,12 +32,12 @@ final class NotchViewModel {
         onStateChange?(state)
     }
 
-    func showPeek(_ peek: LivePeek) {
+    func showPeek(_ peek: LivePeek, durationMs: Int = 3500) {
         guard state != .expanded else { return }
         currentPeek = peek
         state = .peek
         onStateChange?(state)
-        schedulePeekDismiss()
+        schedulePeekDismiss(ms: durationMs)
     }
 
     func beginFileDrag() {
@@ -79,10 +79,10 @@ final class NotchViewModel {
         collapseTask = nil
     }
 
-    private func schedulePeekDismiss() {
+    private func schedulePeekDismiss(ms: Int = 3500) {
         peekTask?.cancel()
         peekTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(3500))
+            try? await Task.sleep(for: .milliseconds(ms))
             guard !Task.isCancelled, let self, self.state == .peek else { return }
             self.state = .collapsed
             self.currentPeek = nil

@@ -44,7 +44,7 @@ Do not copy Boring Notch. Public APIs only: `NSPasteboard`, `NSDraggingInfo`, `N
 
 1. **Drag-hold expand.** Add `.leftMouseUp` to `MouseMonitor`. When the drag pasteboard has files (`public.file-url` or Finder's `NSFilenamesPboardType`) and the pointer is inside `geometry.dropMagnetRect`, call `viewModel.beginFileDrag()`. That expands, sets `isFileDragActive = true`, and skips `scheduleCollapse` until `endFileDrag()` on mouse-up. Snapshot the file URLs during the drag and add them on mouse-up over the panel — a click-through `NSPanel` often never receives AppKit `performDragOperation`. `AppDelegate` already sets `ignoresMouseEvents = (state != .expanded)`; keep that.
 
-2. **Geometry.** Grow `NotchGeometry.expandedSize` height by about 52 pt (shelf row + padding). Add `dropMagnetRect`: same width as the expanded panel, from the top of the screen down through the shelf, plus ~80 pt below so the panel opens before the cursor arrives. Music and calendar layout stay the same; the shelf sits under the divider.
+2. **Geometry.** `NotchGeometry.expandedSize` is 520×360. Add `dropMagnetRect`: same width as the expanded panel, from the top of the screen down through the shelf, plus ~80 pt below so the panel opens before the cursor arrives. Music and calendar layout stay the same; the shelf sits under the divider as a compact strip.
 
 3. **TrayItem / FileTrayStore.** One type per file.
    - `TrayItem`: `id: UUID`, `bookmark: Data`, `name: String`, `addedAt: Date`.
@@ -59,9 +59,12 @@ Do not copy Boring Notch. Public APIs only: `NSPasteboard`, `NSDraggingInfo`, `N
 
 5. **FileTrayController** (`@Observable`, `@MainActor`). Load store at start. `add(urls:)`, `remove(id:)`, `resolvedURL(for:)`, `icon(for:)`. Icons from `NSWorkspace.shared.icon(forFile:)`. Open with `NSWorkspace.shared.open`. Reveal with `activateFileViewerSelecting`.
 
-6. **FileTrayView.** Bottom of `expandedContent`:
-   - Empty: dashed “Drop files or click to browse” zone. Click opens `NSOpenPanel` (files and folders, multiple selection).
-   - Filled: horizontal icon shelf with the file name under each icon and an X to remove. Click opens. Drag out with `NSItemProvider(contentsOf:)`. Do **not** remove on drag-out (copy, not move).
+6. **FileTrayView.** Bottom of `expandedContent`, compact by default (~26 pt) so it does not dominate the panel:
+   - Compact empty: “Files — Drop or click”. Click opens `NSOpenPanel`.
+   - Compact filled: tiny icons + count. Click expands the shelf.
+   - Expanded empty: dashed drop zone. Click opens `NSOpenPanel` (files and folders, multiple selection).
+   - Expanded filled: horizontal icon shelf with the file name under each icon and an X to remove. Chevron collapses. Click opens. Drag out with `NSItemProvider(contentsOf:)`. Do **not** remove on drag-out (copy, not move).
+   - Dragging a file onto the notch expands the shelf for the drop. Adding a file also expands it. Collapsing the notch hides it again.
    - **Send all** AirDrops every shareable file in the tray.
    - Context menu: Open, Reveal in Finder, AirDrop, Remove.
 

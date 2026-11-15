@@ -9,8 +9,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var musicController: MusicController?
     private var calendarController: CalendarController?
     private var trayController: FileTrayController?
+    private var clipboardController: ClipboardController?
+    private var batteryMonitor: BatteryMonitor?
+    private var focusMonitor: FocusMonitor?
     private var liveActivities: LiveActivityController?
+    private var mediaKeyMonitor: MediaKeyMonitor?
+    private var settingsWindow: SettingsWindowController?
     private var screenObserver: NSObjectProtocol?
+    private let settings = SettingsStore.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -32,29 +38,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         trayController = tray
         tray.start()
 
+        let clipboard = ClipboardController()
+        clipboardController = clipboard
+        clipboard.start()
+
+        let battery = BatteryMonitor()
+        batteryMonitor = battery
+        battery.start()
+
+        let focus = FocusMonitor()
+        focusMonitor = focus
+        focus.start()
+
         liveActivities = LiveActivityController()
         music.onNowPlayingChange = { [weak self] playing in
             self?.liveActivities?.handleMusicChange(playing)
         }
 
+        settingsWindow = SettingsWindowController(store: settings)
         layoutPanel()
-
-        screenObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.didChangeScreenParametersNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.layoutPanel()
-            }
-        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         mouseMonitor?.stop()
+        mediaKeyMonitor?.stop()
         musicController?.shutdown()
         calendarController?.shutdown()
         trayController?.shutdown()
+        clipboardController?.shutdown()
+        batteryMonitor?.shutdown()
+        focusMonitor?.shutdown()
         liveActivities?.shutdown()
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
@@ -76,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func openSettings() {
+        settingsWindow?.show()
+    }
+
     private func shouldYieldToExistingInstance() -> Bool {
         if CommandLine.arguments.contains("--restarted") {
             return false
@@ -92,13 +109,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let music = resolvedMusicController()
         let calendar = resolvedCalendarController()
         let tray = resolvedTrayController()
+        let clipboard = resolvedClipboardController()
+        let battery = resolvedBatteryMonitor()
+        let focus = resolvedFocusMonitor()
         let viewModel = existingViewModel(updating: geometry)
         let content = makeContentView(
             geometry: geometry,
             viewModel: viewModel,
             music: music,
             calendar: calendar,
-            tray: tray
+            tray: tray,
+            clipboard: clipboard,
+            battery: battery,
+            focus: focus
         )
 
         if let panel {
@@ -117,7 +140,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         bindFilePicker(tray: tray, panel: panel, viewModel: viewModel)
 
-        liveActivities?.attach(viewModel: viewModel, calendar: calendar)
+        liveActivities?.attach(viewModel: viewModel, calendar: calendar, battery: battery)
         liveActivities?.start()
 
         viewModel.onStateChange = { [weak panel, weak music, weak calendar] state in
@@ -128,10 +151,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        let monitor = MouseMonitor(viewModel: viewModel, tray: tray)
+        let monitor = MouseMonitor(viewModel: viewModel, tray: tray, settings: settings)
         mouseMonitor = monitor
+        let keys = MediaKeyMonitor(settings: settings, viewModel: viewModel)
+        mediaKeyMonitor = keys
+        keys.start()
         panel.orderFrontRegardless()
         monitor.start()
+
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.layoutPanel()
+            }
+        }
     }
 
     private func existingViewModel(updating geometry: NotchGeometry) -> NotchViewModel {
@@ -168,6 +204,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return tray
     }
 
+    private func resolvedClipboardController() -> ClipboardController {
+        if let clipboardController { return clipboardController }
+        let clipboard = ClipboardController()
+        clipboardController = clipboard
+        clipboard.start()
+        return clipboard
+    }
+
+    private func resolvedBatteryMonitor() -> BatteryMonitor {
+        if let batteryMonitor { return batteryMonitor }
+        let battery = BatteryMonitor()
+        batteryMonitor = battery
+        battery.start()
+        return battery
+    }
+
+    private func resolvedFocusMonitor() -> FocusMonitor {
+        if let focusMonitor { return focusMonitor }
+        let focus = FocusMonitor()
+        focusMonitor = focus
+        focus.start()
+        return focus
+    }
+
     private func bindFilePicker(tray: FileTrayController, panel: NotchPanel, viewModel: NotchViewModel) {
         tray.onPickingFiles = { [weak panel, weak viewModel] picking in
             if picking {
@@ -185,14 +245,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel: NotchViewModel,
         music: MusicController,
         calendar: CalendarController,
-        tray: FileTrayController
+        tray: FileTrayController,
+        clipboard: ClipboardController,
+        battery: BatteryMonitor,
+        focus: FocusMonitor
     ) -> NSView {
         let hostingView = NSHostingView(
             rootView: NotchRootView(
                 viewModel: viewModel,
                 musicController: music,
                 calendarController: calendar,
-                trayController: tray
+                trayController: tray,
+                clipboardController: clipboard,
+                batteryMonitor: battery,
+                focusMonitor: focus,
+                settings: settings
             )
         )
         hostingView.wantsLayer = true
@@ -201,7 +268,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let bounds = NSRect(origin: .zero, size: NotchGeometry.expandedSize)
         hostingView.frame = bounds
 
-        let shelfHeight: CGFloat = 96
+        let shelfHeight: CGFloat = 140
         let dropView = FileDropView(
             frame: NSRect(x: 0, y: 0, width: bounds.width, height: shelfHeight)
         )

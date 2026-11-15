@@ -34,11 +34,38 @@ struct PeekView: View {
                 Text(charging ? "Charging \(percent)%" : "Low battery \(percent)%")
                     .font(.caption.weight(.semibold))
                     .lineLimit(1)
+            case .volume(let percent, let muted):
+                Image(systemName: muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    .font(.caption.weight(.semibold))
+                meter(percent)
+                Text(muted ? "Muted" : "\(percent)%")
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+            case .brightness(let percent):
+                Image(systemName: "sun.max.fill")
+                    .font(.caption.weight(.semibold))
+                meter(percent)
+                Text("\(percent)%")
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
             }
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func meter(_ percent: Int) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.2))
+                Capsule()
+                    .fill(Color.white.opacity(0.9))
+                    .frame(width: geo.size.width * CGFloat(min(max(percent, 0), 100)) / 100)
+            }
+        }
+        .frame(width: 88, height: 6)
     }
 
     @ViewBuilder
