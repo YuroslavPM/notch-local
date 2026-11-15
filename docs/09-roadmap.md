@@ -6,31 +6,30 @@ Each item should get its own `docs/NN-*.md` guide in the same format (Goal, File
 
 See [10-file-tray.md](10-file-tray.md). Implemented.
 
-- Drop magnet + drag-hold expand (collapsed panel cannot receive drops while `ignoresMouseEvents` is true).
-- AppKit `NSDraggingDestination` for incoming files; SwiftUI `onDrag` for outgoing.
-- Bookmarks in `~/Library/Application Support/NotchLocal/tray.json` (no security scope; app is unsandboxed).
-- AirDrop via `NSSharingService(named: .sendViaAirDrop)` with `NotchPanel` as the source window.
-
 ## 11 - Generic Now Playing
 
-See [11-generic-now-playing.md](11-generic-now-playing.md). Uses `media-control` (BSD-3-Clause) for any Now Playing source; AppleScript remains the fallback.
+See [11-generic-now-playing.md](11-generic-now-playing.md). Implemented.
 
 ## 12 - Live activity sneak peeks
 
-See [12-live-activities.md](12-live-activities.md). Collapsed peeks for track changes, meetings within 5 minutes, and battery.
+See [12-live-activities.md](12-live-activities.md). Implemented.
 
 ## 13 - Launch at login and settings
 
-- `SMAppService.mainApp.register()` for launch at login.
-- Settings window: expanded size, hover delay, which widgets to show, preferred music source.
-- Persist with `@AppStorage`.
+See [13-settings.md](13-settings.md).
 
-## 14 - Volume and brightness HUD
+## 14 - Clipboard shelf
 
-- Replace the system HUD with one that grows out of the notch.
-- Needs Accessibility permission and media key interception (`CGEventTap`). This is the most fragile feature; do it last.
+See [14-clipboard.md](14-clipboard.md).
 
-## 15 - Distribution polish
+## 15 - Status row and calendar open
 
-- App icon (`AppIcon.icns` in `Contents/Resources`, `CFBundleIconFile` in Info.plist).
-- Optional: free Apple developer certificate signing so permissions survive rebuilds.
+See [15-status-and-calendar.md](15-status-and-calendar.md).
+
+## 16 - Volume and brightness HUD
+
+See [16-hud.md](16-hud.md). System HUD is not swallowed; the notch peeks the new level.
+
+## 17 - Distribution polish
+
+See [17-distribution.md](17-distribution.md).

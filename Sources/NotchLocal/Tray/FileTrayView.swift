@@ -5,29 +5,107 @@ struct FileTrayView: View {
 
     var body: some View {
         Group {
+            if controller.isOpen {
+                expandedShelf
+            } else {
+                compactShelf
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: controller.isOpen ? 64 : 26)
+        .background(shelfBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(borderColor, style: StrokeStyle(lineWidth: 1, dash: dashPattern))
+        )
+        .animation(.easeInOut(duration: 0.18), value: controller.isOpen)
+        .onDisappear {
+            controller.collapseShelf()
+        }
+    }
+
+    private var dashPattern: [CGFloat] {
+        controller.items.isEmpty && !controller.isTargeted ? [5, 4] : []
+    }
+
+    private var compactShelf: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "tray")
+                .font(.caption.weight(.semibold))
+            if controller.items.isEmpty {
+                Text("Files")
+                    .font(.caption.weight(.medium))
+                Text("Drop or click")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.55))
+            } else {
+                compactIcons
+                Text(fileCountLabel)
+                    .font(.caption.weight(.medium))
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.up")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 10)
+        .foregroundStyle(.white.opacity(0.85))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if controller.items.isEmpty {
+                controller.chooseFiles()
+            } else {
+                controller.expandShelf()
+            }
+        }
+        .help(controller.items.isEmpty ? "Drop files or click to browse" : "Show files")
+    }
+
+    private var compactIcons: some View {
+        HStack(spacing: -6) {
+            ForEach(controller.items.prefix(4)) { item in
+                Image(nsImage: controller.icon(for: item))
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .opacity(controller.isMissing(item) ? 0.4 : 1)
+            }
+        }
+    }
+
+    private var fileCountLabel: String {
+        let count = controller.items.count
+        return count == 1 ? "1 file" : "\(count) files"
+    }
+
+    private var expandedShelf: some View {
+        Group {
             if controller.items.isEmpty {
                 emptyShelf
             } else {
                 filledShelf
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(shelfBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(borderColor, style: StrokeStyle(lineWidth: 1, dash: controller.items.isEmpty ? [5, 4] : []))
-        )
     }
 
     private var emptyShelf: some View {
-        VStack(spacing: 2) {
-            Text("Drop files")
-                .font(.caption.weight(.medium))
-            Text("or click to browse")
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.6))
+        HStack(spacing: 8) {
+            Image(systemName: "tray")
+                .font(.caption.weight(.semibold))
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Drop files")
+                    .font(.caption.weight(.medium))
+                Text("or click to browse")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, 10)
         .foregroundStyle(.white.opacity(0.85))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
@@ -36,6 +114,16 @@ struct FileTrayView: View {
 
     private var filledShelf: some View {
         HStack(spacing: 8) {
+            Button(action: controller.collapseShelf) {
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .frame(width: 16, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Hide files")
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 8) {
                     ForEach(controller.items) { item in
@@ -60,7 +148,7 @@ struct FileTrayView: View {
                     .font(.caption2.weight(.medium))
             }
             .foregroundStyle(.white.opacity(0.85))
-            .frame(width: 52, height: 56)
+            .frame(width: 44, height: 48)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -79,9 +167,9 @@ struct FileTrayView: View {
                         .resizable()
                         .interpolation(.high)
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 26, height: 26)
                         .opacity(missing ? 0.4 : 1)
-                        .frame(width: 36, height: 32)
+                        .frame(width: 32, height: 30)
                 }
                 .buttonStyle(.plain)
                 .disabled(missing)
@@ -104,7 +192,7 @@ struct FileTrayView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .foregroundStyle(.white.opacity(missing ? 0.45 : 0.85))
-                .frame(width: 56)
+                .frame(width: 52)
                 .help(item.name)
         }
         .onDrag {

@@ -7,6 +7,9 @@ struct NotchLocalApp: App {
 
     var body: some Scene {
         MenuBarExtra("NotchLocal", systemImage: "rectangle.topthird.inset.filled") {
+            Button("Settings…") { appDelegate.openSettings() }
+                .keyboardShortcut(",")
+            Divider()
             Button("Restart") { appDelegate.restart() }
             Divider()
             Button("Quit NotchLocal") { NSApp.terminate(nil) }

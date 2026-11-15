@@ -6,8 +6,11 @@ import Observation
 final class FileTrayController {
     private(set) var items: [TrayItem] = []
     private(set) var isTargeted = false
+    private(set) var isShelfExpanded = false
     private(set) var hoveredID: UUID?
     private(set) var isPickingFiles = false
+
+    var isOpen: Bool { isShelfExpanded || isTargeted }
 
     let airDrop = AirDropService()
     var onPickingFiles: ((Bool) -> Void)?
@@ -37,6 +40,21 @@ final class FileTrayController {
 
     func setTargeted(_ targeted: Bool) {
         isTargeted = targeted
+        if targeted {
+            isShelfExpanded = true
+        }
+    }
+
+    func expandShelf() {
+        isShelfExpanded = true
+    }
+
+    func collapseShelf() {
+        isShelfExpanded = false
+    }
+
+    func toggleShelf() {
+        isShelfExpanded.toggle()
     }
 
     func setHovered(_ id: UUID?) {
@@ -208,6 +226,7 @@ final class FileTrayController {
             }
         }
         items = Array(combined.prefix(FileTrayStore.cap))
+        isShelfExpanded = true
         persist()
     }
 

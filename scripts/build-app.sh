@@ -10,6 +10,10 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/NotchLocal"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+if [[ -f Resources/AppIcon.icns ]]; then
+  cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+fi
 
-codesign --force --deep --sign - "$APP"
+IDENTITY="${NOTCHLOCAL_SIGN_IDENTITY:--}"
+codesign --force --deep --sign "$IDENTITY" "$APP"
 echo "Built $APP"

@@ -27,7 +27,13 @@ struct CalendarPeekView: View {
                     .foregroundStyle(.secondary)
             case .granted:
                 ForEach(controller.events, id: \.calendarItemIdentifier) { event in
-                    eventRow(event)
+                    Button {
+                        controller.open(event)
+                    } label: {
+                        eventRow(event)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open in Calendar")
                 }
             case .unknown:
                 Text("Expand to load events")

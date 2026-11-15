@@ -1,3 +1,4 @@
+import AppKit
 import EventKit
 import Foundation
 import Observation
@@ -58,6 +59,21 @@ final class CalendarController {
         }
         if access == .granted {
             reload()
+        }
+    }
+
+    func open(_ event: EKEvent) {
+        if let url = event.url, NSWorkspace.shared.open(url) {
+            return
+        }
+        if let start = event.startDate {
+            let stamp = Int(start.timeIntervalSinceReferenceDate)
+            if let url = URL(string: "ical://ekevent/\(stamp)"), NSWorkspace.shared.open(url) {
+                return
+            }
+        }
+        if let url = URL(string: "ical://") {
+            NSWorkspace.shared.open(url)
         }
     }
 

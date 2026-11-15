@@ -24,5 +24,9 @@
     <string>NotchLocal shows your upcoming events in the notch.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>NotchLocal reads and controls playback in Spotify and Music.</string>
+    <key>NSFocusStatusUsageDescription</key>
+    <string>NotchLocal shows when Focus is on in the expanded notch.</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
 </dict>
 </plist>

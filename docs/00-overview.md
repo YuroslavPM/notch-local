@@ -5,8 +5,10 @@
 NotchLocal is a menu bar app that draws a panel exactly over the MacBook notch. On macOS 26+ the expanded panel uses Liquid Glass; collapsed it stays opaque so it still covers the camera. When the pointer hovers the notch, the panel expands downward and shows:
 
 1. Music controls for whatever macOS reports as Now Playing (Spotify, Apple Music, YouTube in a browser, Podcasts, …)
-2. The next few calendar events
-3. A file shelf: drop files onto the notch, drag them back out, or AirDrop them
+2. The next few calendar events (click to open)
+3. Focus and battery
+4. A compact file shelf (click to expand) and clipboard history
+5. Volume / brightness peeks from the media keys
 
 While collapsed, the notch can briefly widen for a live peek: a new track, a meeting in the next 5 minutes, or a battery warning.
 
@@ -22,9 +24,13 @@ In scope:
 - Upcoming events via EventKit
 - Collapsed live peeks (track change, meeting, battery)
 - File tray with persistent bookmarks and AirDrop
-- Menu bar icon with Restart / Quit
+- Clipboard shelf
+- Focus and battery status
+- Volume and brightness HUD peeks
+- Settings and launch at login
+- Menu bar icon with Settings / Restart / Quit
 
-Out of scope until their guides are implemented (see `09-roadmap.md`): HUD replacement, clipboard history, launch at login, settings window.
+See `09-roadmap.md` for remaining ideas.
 
 ## Key decisions
 
@@ -58,7 +64,7 @@ notch-local/
   README.md  AGENTS.md  .gitignore  Makefile  Package.swift
   Resources/Info.plist
   scripts/build-app.sh
-  docs/00..12
+  docs/00..17
   Sources/NotchLocal/
     App/       NotchLocalApp.swift, AppDelegate.swift
     Notch/     ScreenGeometry.swift, NotchPanel.swift, NotchViewModel.swift,
@@ -71,6 +77,10 @@ notch-local/
     Tray/      TrayItem.swift, ResolvedBookmark.swift, FileTrayStore.swift,
                FileTrayController.swift, FileDropView.swift, FileDragPasteboard.swift,
                AirDropService.swift, FileTrayView.swift
+    Clipboard/ ClipboardItem.swift, ClipboardController.swift, ClipboardView.swift
+    Status/    BatteryMonitor.swift, FocusMonitor.swift, StatusBarView.swift
+    Settings/  SettingsStore.swift, SettingsView.swift, SettingsWindowController.swift
+    HUD/       VolumeService.swift, BrightnessService.swift, MediaKeyMonitor.swift
 ```
 
 ## Step order
@@ -87,6 +97,11 @@ notch-local/
 10. [10 - File tray and AirDrop](10-file-tray.md)
 11. [11 - Generic Now Playing](11-generic-now-playing.md)
 12. [12 - Live activity sneak peeks](12-live-activities.md)
+13. [13 - Launch at login and settings](13-settings.md)
+14. [14 - Clipboard shelf](14-clipboard.md)
+15. [15 - Status row and calendar open](15-status-and-calendar.md)
+16. [16 - Volume and brightness HUD](16-hud.md)
+17. [17 - Distribution polish](17-distribution.md)
 
 ## Working with Cursor
 

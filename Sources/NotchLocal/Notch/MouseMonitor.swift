@@ -6,13 +6,16 @@ final class MouseMonitor {
     private var localMonitor: Any?
     private let viewModel: NotchViewModel
     private let tray: FileTrayController
+    private let settings: SettingsStore
     private var draggedURLs: [URL] = []
     private var dropGestureActive = false
     private var inboundDrop = false
+    private var expandTask: Task<Void, Never>?
 
-    init(viewModel: NotchViewModel, tray: FileTrayController) {
+    init(viewModel: NotchViewModel, tray: FileTrayController, settings: SettingsStore) {
         self.viewModel = viewModel
         self.tray = tray
+        self.settings = settings
     }
 
     func start() {
@@ -33,6 +36,8 @@ final class MouseMonitor {
         if let localMonitor { NSEvent.removeMonitor(localMonitor) }
         globalMonitor = nil
         localMonitor = nil
+        expandTask?.cancel()
+        expandTask = nil
     }
 
     private func handle(_ point: CGPoint, type: NSEvent.EventType) {
@@ -43,6 +48,7 @@ final class MouseMonitor {
         if type == .leftMouseDragged {
             trackInboundDrop(at: point)
             if inboundDrop, g.dropMagnetRect.contains(point) {
+                cancelScheduledExpand()
                 viewModel.beginFileDrag()
                 tray.setTargeted(true)
                 return
@@ -59,10 +65,13 @@ final class MouseMonitor {
         switch viewModel.state {
         case .collapsed:
             if g.collapsedRect.insetBy(dx: -8, dy: -4).contains(point) {
-                viewModel.expand()
+                scheduleExpand()
+            } else {
+                cancelScheduledExpand()
             }
         case .peek:
             if g.peekRect.insetBy(dx: -8, dy: -4).contains(point) {
+                cancelScheduledExpand()
                 viewModel.expand()
             }
         case .expanded:
@@ -74,6 +83,28 @@ final class MouseMonitor {
                 viewModel.scheduleCollapse()
             }
         }
+    }
+
+    private func scheduleExpand() {
+        let delay = Int(settings.hoverDelayMs)
+        if delay <= 0 {
+            expandTask?.cancel()
+            expandTask = nil
+            viewModel.expand()
+            return
+        }
+        guard expandTask == nil else { return }
+        expandTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(delay))
+            guard !Task.isCancelled, let self else { return }
+            self.viewModel.expand()
+            self.expandTask = nil
+        }
+    }
+
+    private func cancelScheduledExpand() {
+        expandTask?.cancel()
+        expandTask = nil
     }
 
     private func trackInboundDrop(at point: CGPoint) {
