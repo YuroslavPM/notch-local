@@ -96,10 +96,10 @@ struct MusicView: View {
     private func progressBar(for nowPlaying: NowPlaying) -> some View {
         let duration = nowPlaying.duration
         if duration > 1 {
-            TimelineView(.periodic(from: .now, by: 0.25)) { timeline in
+            TimelineView(.periodic(from: .now, by: 0.25)) { _ in
                 let elapsed = controller.isScrubbing
                     ? controller.scrubPosition
-                    : nowPlaying.displayedElapsed(at: timeline.date)
+                    : nowPlaying.displayedElapsed()
                 VStack(spacing: 3) {
                     Slider(
                         value: Binding(
@@ -130,7 +130,7 @@ struct MusicView: View {
     }
 
     private static func clock(_ seconds: TimeInterval) -> String {
-        let total = max(0, Int(seconds.rounded()))
+        let total = max(0, Int(seconds))
         let minutes = total / 60
         let remain = total % 60
         return String(format: "%d:%02d", minutes, remain)
