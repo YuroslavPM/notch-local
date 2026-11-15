@@ -6,10 +6,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var panel: NotchPanel?
     private var viewModel: NotchViewModel?
     private var mouseMonitor: MouseMonitor?
+    private var musicController: MusicController?
     private var screenObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+
+        let music = MusicController()
+        musicController = music
+        music.start()
         layoutPanel()
 
         screenObserver = NotificationCenter.default.addObserver(
@@ -25,9 +30,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func layoutPanel() {
         guard let geometry = ScreenGeometry.current() else { return }
+        let music = musicController ?? MusicController()
+        if musicController == nil {
+            musicController = music
+            music.start()
+        }
 
         let viewModel = existingViewModel(updating: geometry)
-        let hostingView = NSHostingView(rootView: NotchRootView(viewModel: viewModel))
+        let hostingView = NSHostingView(
+            rootView: NotchRootView(viewModel: viewModel, musicController: music)
+        )
         hostingView.wantsLayer = true
         hostingView.layer?.backgroundColor = NSColor.clear.cgColor
 
@@ -42,8 +54,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.ignoresMouseEvents = true
         self.panel = panel
 
-        viewModel.onStateChange = { [weak panel] state in
+        viewModel.onStateChange = { [weak panel, weak music] state in
             panel?.ignoresMouseEvents = (state == .collapsed)
+            music?.setActive(state == .expanded)
         }
 
         let monitor = MouseMonitor(viewModel: viewModel)
