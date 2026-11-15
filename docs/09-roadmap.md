@@ -2,12 +2,14 @@
 
 Each item should get its own `docs/NN-*.md` guide in the same format (Goal, Files, Steps, Done when, Pitfalls) before implementing.
 
-## 10 - File tray
+## 10 - File tray and AirDrop
 
-- Drop zone in the expanded panel. Dragging files toward the notch auto-expands it (`NSDraggingDestination` on the hosting view; also expand on `.leftMouseDragged` near the notch).
-- Store file bookmarks (security-scoped not needed outside the sandbox) in `~/Library/Application Support/NotchLocal/tray.json`.
-- Drag items back out with `NSItemProvider` / `onDrag`. Remove from the tray on right-click.
-- AirDrop via `NSSharingService(named: .sendViaAirDrop)`.
+See [10-file-tray.md](10-file-tray.md). Implemented.
+
+- Drop magnet + drag-hold expand (collapsed panel cannot receive drops while `ignoresMouseEvents` is true).
+- AppKit `NSDraggingDestination` for incoming files; SwiftUI `onDrag` for outgoing.
+- Bookmarks in `~/Library/Application Support/NotchLocal/tray.json` (no security scope; app is unsandboxed).
+- AirDrop via `NSSharingService(named: .sendViaAirDrop)` with `NotchPanel` as the source window.
 
 ## 11 - Generic Now Playing
 

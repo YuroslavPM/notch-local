@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mouseMonitor: MouseMonitor?
     private var musicController: MusicController?
     private var calendarController: CalendarController?
+    private var trayController: FileTrayController?
     private var liveActivities: LiveActivityController?
     private var screenObserver: NSObjectProtocol?
 
@@ -26,6 +27,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let calendar = CalendarController()
         calendarController = calendar
         calendar.start()
+
+        let tray = FileTrayController()
+        trayController = tray
+        tray.start()
 
         liveActivities = LiveActivityController()
         music.onNowPlayingChange = { [weak self] playing in
@@ -49,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mouseMonitor?.stop()
         musicController?.shutdown()
         calendarController?.shutdown()
+        trayController?.shutdown()
         liveActivities?.shutdown()
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
@@ -85,28 +91,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let geometry = ScreenGeometry.current() else { return }
         let music = resolvedMusicController()
         let calendar = resolvedCalendarController()
+        let tray = resolvedTrayController()
         let viewModel = existingViewModel(updating: geometry)
-
-        let hostingView = NSHostingView(
-            rootView: NotchRootView(
-                viewModel: viewModel,
-                musicController: music,
-                calendarController: calendar
-            )
+        let content = makeContentView(
+            geometry: geometry,
+            viewModel: viewModel,
+            music: music,
+            calendar: calendar,
+            tray: tray
         )
-        hostingView.wantsLayer = true
-        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
 
         if let panel {
             panel.setFrame(geometry.expandedRect, display: true)
-            panel.contentView = hostingView
+            panel.contentView = content
+            tray.airDrop.sourceWindow = panel
             return
         }
 
         let panel = NotchPanel(contentRect: geometry.expandedRect)
-        panel.contentView = hostingView
+        panel.contentView = content
         panel.ignoresMouseEvents = true
         self.panel = panel
+        tray.airDrop.sourceWindow = panel
 
         liveActivities?.attach(viewModel: viewModel, calendar: calendar)
         liveActivities?.start()
@@ -149,5 +155,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         calendarController = calendar
         calendar.start()
         return calendar
+    }
+
+    private func resolvedTrayController() -> FileTrayController {
+        if let trayController { return trayController }
+        let tray = FileTrayController()
+        trayController = tray
+        tray.start()
+        return tray
+    }
+
+    private func makeContentView(
+        geometry: NotchGeometry,
+        viewModel: NotchViewModel,
+        music: MusicController,
+        calendar: CalendarController,
+        tray: FileTrayController
+    ) -> NSView {
+        let hostingView = NSHostingView(
+            rootView: NotchRootView(
+                viewModel: viewModel,
+                musicController: music,
+                calendarController: calendar,
+                trayController: tray
+            )
+        )
+        hostingView.wantsLayer = true
+        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
+
+        let bounds = NSRect(origin: .zero, size: NotchGeometry.expandedSize)
+        hostingView.frame = bounds
+
+        let dropView = FileDropView(frame: bounds)
+        dropView.controller = tray
+
+        let container = NSView(frame: bounds)
+        container.wantsLayer = true
+        container.layer?.backgroundColor = NSColor.clear.cgColor
+        hostingView.autoresizingMask = [.width, .height]
+        dropView.autoresizingMask = [.width, .height]
+        container.addSubview(hostingView)
+        container.addSubview(dropView)
+        return container
     }
 }

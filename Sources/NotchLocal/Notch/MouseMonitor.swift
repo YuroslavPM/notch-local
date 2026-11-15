@@ -11,14 +11,14 @@ final class MouseMonitor {
     }
 
     func start() {
-        let mask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged]
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] _ in
+        let mask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .leftMouseUp]
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] event in
             MainActor.assumeIsolated {
-                self?.handle(NSEvent.mouseLocation)
+                self?.handle(NSEvent.mouseLocation, type: event.type)
             }
         }
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
-            self?.handle(NSEvent.mouseLocation)
+            self?.handle(NSEvent.mouseLocation, type: event.type)
             return event
         }
     }
@@ -30,8 +30,17 @@ final class MouseMonitor {
         localMonitor = nil
     }
 
-    private func handle(_ point: CGPoint) {
+    private func handle(_ point: CGPoint, type: NSEvent.EventType) {
+        if type == .leftMouseUp {
+            viewModel.endFileDrag()
+        }
+
         let g = viewModel.geometry
+        if FileDragPasteboard.isDraggingFiles, g.dropMagnetRect.contains(point) {
+            viewModel.beginFileDrag()
+            return
+        }
+
         switch viewModel.state {
         case .collapsed:
             if g.collapsedRect.insetBy(dx: -8, dy: -4).contains(point) {
@@ -42,7 +51,9 @@ final class MouseMonitor {
                 viewModel.expand()
             }
         case .expanded:
-            if g.expandedRect.contains(point) {
+            if viewModel.isFileDragActive {
+                viewModel.cancelCollapse()
+            } else if g.expandedRect.contains(point) {
                 viewModel.cancelCollapse()
             } else {
                 viewModel.scheduleCollapse()

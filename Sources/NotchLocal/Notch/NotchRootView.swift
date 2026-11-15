@@ -4,6 +4,7 @@ struct NotchRootView: View {
     var viewModel: NotchViewModel
     var musicController: MusicController
     var calendarController: CalendarController
+    var trayController: FileTrayController
 
     @Namespace private var glassNamespace
 
@@ -101,13 +102,18 @@ struct NotchRootView: View {
     }
 
     private var expandedContent: some View {
-        HStack(alignment: .top, spacing: 12) {
-            MusicView(controller: musicController)
-                .frame(width: 268, alignment: .leading)
-            Rectangle()
-                .fill(.white.opacity(0.22))
-                .frame(width: 1)
-            CalendarPeekView(controller: calendarController)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                MusicView(controller: musicController)
+                    .frame(width: 268, alignment: .leading)
+                Rectangle()
+                    .fill(.white.opacity(0.22))
+                    .frame(width: 1)
+                CalendarPeekView(controller: calendarController)
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+            FileTrayView(controller: trayController)
+                .frame(height: 44)
         }
     }
 }
