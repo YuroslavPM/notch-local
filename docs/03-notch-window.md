@@ -23,7 +23,7 @@ A transparent, always-on-top panel pinned to the top center of the screen that d
        let notchSize: CGSize
        let hasNotch: Bool
 
-       static let expandedSize = CGSize(width: 520, height: 190)
+       static let expandedSize = CGSize(width: 520, height: 258)
 
        var collapsedRect: CGRect { rect(for: notchSize) }
        var expandedRect: CGRect { rect(for: Self.expandedSize) }
@@ -115,6 +115,7 @@ A transparent, always-on-top panel pinned to the top center of the screen that d
 - `.statusBar` level sits above normal windows and the menu bar. If fullscreen apps cover it, try `NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) + 3)`.
 - `.fullScreenAuxiliary` lets the panel appear over fullscreen spaces. `.canJoinAllSpaces` keeps it on every desktop.
 - `NSHostingView` should have a clear background. If you see a gray box, set `hostingView.wantsLayer = true` and `hostingView.layer?.backgroundColor = .clear`.
+- On macOS 26+ the expanded shape uses `.glassEffect(.regular.interactive(), in: NotchShape)` inside a `GlassEffectContainer` so the panel refracts the desktop. Collapsed stays black so it still covers the camera. Older macOS keeps the solid black fill.
 
 ## Done when
 

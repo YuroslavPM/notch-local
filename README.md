@@ -1,6 +1,6 @@
 # NotchLocal
 
-A personal, local-only macOS app that turns the MacBook notch into a small control panel, inspired by NotchNook. Hover the notch and it expands to show what is playing in Spotify or Apple Music and your next calendar events.
+A personal, local-only macOS app that turns the MacBook notch into a small control panel, inspired by NotchNook. Hover the notch and it expands to show what is playing (any Now Playing source) and your next calendar events. While collapsed it can peek a new track, an upcoming meeting, or a battery warning.
 
 Built with Swift 6, SwiftUI and AppKit using Swift Package Manager. Xcode is not required.
 
@@ -8,6 +8,7 @@ Built with Swift 6, SwiftUI and AppKit using Swift Package Manager. Xcode is not
 
 - macOS 14 Sonoma or later (developed on macOS 27, Apple Silicon)
 - Swift 6 toolchain (Xcode Command Line Tools are enough)
+- Optional: `brew install media-control` for YouTube, Podcasts, and other Now Playing sources (Spotify and Apple Music still work without it)
 
 ## Run
 

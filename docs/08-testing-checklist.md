@@ -50,5 +50,6 @@ Run `make run` first. Go through this list after every step (the relevant sectio
 
 ## Ship
 
-- [ ] All steps committed (`step 02` to `step 07`)
-- [ ] `git push -u origin main`
+- [ ] All steps committed (`step 02` to `step 07`) as stacked PRs
+- [ ] Merge in order: #1 scaffold → #2 window → #3 hover → #4 music → #5 calendar → #6 menu bar
+- [ ] After #6 lands, `main` is the runnable MVP; later work uses `09-roadmap.md`

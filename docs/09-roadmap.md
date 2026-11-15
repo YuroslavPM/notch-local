@@ -11,13 +11,11 @@ Each item should get its own `docs/NN-*.md` guide in the same format (Goal, File
 
 ## 11 - Generic Now Playing
 
-- Support browsers, YouTube, Podcasts and others through [mediaremote-adapter](https://github.com/ungive/mediaremote-adapter), which works around the macOS 15.4+ MediaRemote restriction. Check its license before bundling.
-- Keep the AppleScript path as a fallback.
+See [11-generic-now-playing.md](11-generic-now-playing.md). Uses `media-control` (BSD-3-Clause) for any Now Playing source; AppleScript remains the fallback.
 
 ## 12 - Live activity sneak peeks
 
-- While collapsed, briefly widen the notch to show the track title on track change, or a countdown 5 minutes before a meeting.
-- Requires a third view model state: `.peek` with its own size and auto-dismiss timer.
+See [12-live-activities.md](12-live-activities.md). Collapsed peeks for track changes, meetings within 5 minutes, and battery.
 
 ## 13 - Launch at login and settings
 

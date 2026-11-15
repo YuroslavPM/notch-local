@@ -2,10 +2,12 @@
 
 ## What we are building
 
-NotchLocal is a menu bar app that draws a black panel exactly over the MacBook notch. When the pointer hovers the notch, the panel expands downward and shows:
+NotchLocal is a menu bar app that draws a panel exactly over the MacBook notch. On macOS 26+ the expanded panel uses Liquid Glass; collapsed it stays opaque so it still covers the camera. When the pointer hovers the notch, the panel expands downward and shows:
 
-1. Music controls for Spotify or Apple Music (artwork, title, artist, previous / play-pause / next)
+1. Music controls for whatever macOS reports as Now Playing (Spotify, Apple Music, YouTube in a browser, Podcasts, …)
 2. The next few calendar events
+
+While collapsed, the notch can briefly widen for a live peek: a new track, a meeting in the next 5 minutes, or a battery warning.
 
 When the pointer leaves, the panel shrinks back into the notch and lets clicks pass through.
 
@@ -15,8 +17,9 @@ In scope:
 
 - Notch-aligned panel on the built-in display, fallback handle on displays without a notch
 - Hover expand / collapse with animation
-- Spotify + Apple Music controls via AppleScript
+- Any Now Playing source via `media-control`, with Spotify / Music AppleScript fallback
 - Upcoming events via EventKit
+- Collapsed live peeks (track change, meeting, battery)
 - Menu bar icon with Restart / Quit
 
 Out of scope (see `09-roadmap.md`): file tray, HUD replacement, live activities, AirDrop, clipboard history, generic "Now Playing" for browsers, launch at login, settings window.
@@ -42,7 +45,7 @@ flowchart TB
   Root --> CalendarPeekView --> CalendarController --> EventKit
 ```
 
-The panel window is always the size of the **expanded** frame but fully transparent. Only the black notch shape is drawn. While collapsed, `ignoresMouseEvents = true` so the window never blocks clicks. A global mouse monitor detects the pointer entering the notch, expands the view model, and turns mouse events back on.
+The panel window is always the size of the **expanded** frame but fully transparent. Only the notch shape is drawn (Liquid Glass when expanded on macOS 26+, black otherwise). While collapsed, `ignoresMouseEvents = true` so the window never blocks clicks. A global mouse monitor detects the pointer entering the notch, expands the view model, and turns mouse events back on.
 
 ## Final layout
 
@@ -55,8 +58,11 @@ notch-local/
   Sources/NotchLocal/
     App/       NotchLocalApp.swift, AppDelegate.swift
     Notch/     ScreenGeometry.swift, NotchPanel.swift, NotchViewModel.swift,
-               MouseMonitor.swift, NotchShape.swift, NotchRootView.swift
-    Music/     MusicController.swift, MusicView.swift
+               MouseMonitor.swift, NotchShape.swift, NotchRootView.swift,
+               GlassControlButton.swift, LivePeek.swift, PeekView.swift,
+               LiveActivityController.swift
+    Music/     MusicSource.swift, NowPlaying.swift, AppleScriptRunner.swift,
+               MediaRemoteClient.swift, MusicController.swift, MusicView.swift
     Calendar/  CalendarController.swift, CalendarPeekView.swift
 ```
 
