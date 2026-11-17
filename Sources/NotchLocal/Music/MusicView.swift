@@ -14,22 +14,8 @@ struct MusicView: View {
             } else if let nowPlaying = controller.nowPlaying {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 10) {
-                        Button(action: controller.revealPlayer) {
-                            HStack(spacing: 10) {
-                                artwork
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(nowPlaying.title.isEmpty ? "Unknown" : nowPlaying.title)
-                                        .font(.headline)
-                                        .lineLimit(1)
-                                    Text(nowPlaying.artist.isEmpty ? nowPlaying.source.displayName : nowPlaying.artist)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+                        revealControl(nowPlaying)
+                            .help("Show \(nowPlaying.source.displayName)")
                         Spacer(minLength: 6)
                         controls(isPlaying: nowPlaying.isPlaying)
                     }
@@ -43,6 +29,24 @@ struct MusicView: View {
             }
         }
         .foregroundStyle(.white)
+    }
+
+    private func revealControl(_ nowPlaying: NowPlaying) -> some View {
+        HStack(spacing: 10) {
+            artwork
+            VStack(alignment: .leading, spacing: 2) {
+                Text(nowPlaying.title.isEmpty ? "Unknown" : nowPlaying.title)
+                    .font(.headline)
+                    .lineLimit(1)
+                Text(nowPlaying.artist.isEmpty ? nowPlaying.source.displayName : nowPlaying.artist)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: controller.revealPlayer)
+        .help("Show \(nowPlaying.source.displayName)")
     }
 
     private var artwork: some View {

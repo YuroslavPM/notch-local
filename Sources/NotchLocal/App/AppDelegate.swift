@@ -113,6 +113,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let battery = resolvedBatteryMonitor()
         let focus = resolvedFocusMonitor()
         let viewModel = existingViewModel(updating: geometry)
+        music.onRevealPlayer = { [weak viewModel] in
+            viewModel?.collapseNow()
+        }
         let content = makeContentView(
             geometry: geometry,
             viewModel: viewModel,
@@ -152,6 +155,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let monitor = MouseMonitor(viewModel: viewModel, tray: tray, settings: settings)
+        monitor.onRevealPlayer = { [weak music] in
+            music?.revealPlayer()
+        }
         mouseMonitor = monitor
         let keys = MediaKeyMonitor(settings: settings, viewModel: viewModel)
         mediaKeyMonitor = keys

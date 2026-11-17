@@ -2,7 +2,7 @@
 
 ## Goal
 
-While collapsed, the notch briefly widens to show a live peek: a new track title, a meeting starting within 5 minutes, or a battery plug-in / low-battery warning. Hovering the peek still expands the full panel.
+While collapsed, the notch briefly widens to show a live peek: a new track title, a meeting starting within 5 minutes, or a battery plug-in / low-battery warning. Clicking the peek opens the full panel. Hovering beside the camera does not.
 
 ## Files created / changed
 
@@ -28,14 +28,14 @@ While collapsed, the notch briefly widens to show a live peek: a new track title
 
 4. **PeekView.** One line: icon or tiny artwork, then the message. Same NotchShape as collapsed, slightly wider.
 
-5. Mouse: hovering the peek rect expands. `ignoresMouseEvents` stays true while peeked so the rest of the screen stays click-through.
+5. Mouse: a click on the peek expands the panel. Hovering the wider peek does not. `ignoresMouseEvents` stays true while peeked so the rest of the screen stays click-through.
 
 ## Done when
 
 - Changing the track widens the notch with the new title, then it shrinks after a few seconds.
 - A meeting starting within 5 minutes peeks once.
 - Plugging in power or hitting low battery peeks once.
-- Hovering a peek opens the full panel. Clicks next to it still reach the app below.
+- Clicking a peek opens the full panel. Hovering beside the camera does not. Clicks next to it still reach the app below.
 
 ## Pitfalls
 

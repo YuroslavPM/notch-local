@@ -26,7 +26,7 @@ The expanded panel shows whatever macOS reports as Now Playing: Spotify, Apple M
 
 4. Show a live progress bar and let the user drag to seek (`media-control seek` plus AppleScript `player position` for Spotify / Music).
 
-4. Activate the reporting app by bundle identifier when the user clicks artwork or title.
+4. Clicking the artwork, the title, or a music peek calls `revealPlayer()`. Collapse the notch, then open that app with `NSWorkspace.openApplication` (`activates = true`). An accessory panel’s `activate()` is ignored, so briefly switch to `.regular` for the handoff. Prefer the parent app bundle over a WebKit or Helper id. Spotify and Music also get AppleScript `activate`.
 
 ## Done when
 
