@@ -7,11 +7,7 @@ enum FileDragPasteboard {
         // The drag pasteboard often still holds the last Finder files after
         // mouse-up. Only treat it as an active drag while the button is down.
         guard NSEvent.pressedMouseButtons & (1 << 0) != 0 else { return false }
-        let pasteboard = NSPasteboard(name: .drag)
-        if pasteboard.availableType(from: [.fileURL, filenamesType]) != nil {
-            return true
-        }
-        return !fileURLs(from: pasteboard).isEmpty
+        return !fileURLs(from: NSPasteboard(name: .drag)).isEmpty
     }
 
     static func fileURLs(from pasteboard: NSPasteboard) -> [URL] {

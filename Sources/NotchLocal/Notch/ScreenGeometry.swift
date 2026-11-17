@@ -5,9 +5,8 @@ struct NotchGeometry {
     let notchSize: CGSize
     let hasNotch: Bool
 
-    static let expandedSize = CGSize(width: 520, height: 360)
+    static let expandedSize = CGSize(width: 520, height: 320)
     static let contentClearance: CGFloat = 6
-    static let dropMagnetPadding: CGFloat = 80
 
     var contentTopInset: CGFloat { notchSize.height + Self.contentClearance }
 
@@ -18,17 +17,18 @@ struct NotchGeometry {
         )
     }
 
+    /// Physical notch, plus a few points so the pointer does not have to sit on the camera.
+    var hoverRect: CGRect {
+        collapsedRect.insetBy(dx: -6, dy: -4)
+    }
+
     var collapsedRect: CGRect { rect(for: notchSize) }
     var peekRect: CGRect { rect(for: peekSize) }
     var expandedRect: CGRect { rect(for: Self.expandedSize) }
+
+    /// Small band under the camera. File drags open here; the rest of the screen does not.
     var dropMagnetRect: CGRect {
-        let r = expandedRect
-        return CGRect(
-            x: r.minX,
-            y: r.minY - Self.dropMagnetPadding,
-            width: r.width,
-            height: r.height + Self.dropMagnetPadding
-        )
+        collapsedRect.insetBy(dx: -16, dy: -28)
     }
 
     private func rect(for size: CGSize) -> CGRect {
@@ -50,10 +50,12 @@ enum ScreenGeometry {
         if let left = screen.auxiliaryTopLeftArea,
            let right = screen.auxiliaryTopRightArea,
            screen.safeAreaInsets.top > 0 {
-            let width = screen.frame.width - left.width - right.width
+            let rawWidth = screen.frame.width - left.width - right.width
+            let width = min(max(rawWidth, 120), 220)
+            let height = min(max(screen.safeAreaInsets.top, 24), 40)
             return NotchGeometry(
                 screen: screen,
-                notchSize: CGSize(width: width, height: screen.safeAreaInsets.top),
+                notchSize: CGSize(width: width, height: height),
                 hasNotch: true
             )
         }

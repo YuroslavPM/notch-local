@@ -126,7 +126,9 @@ Hovering the notch expands the panel with a spring animation. Moving the pointer
 
 ## Done when
 
-- Hovering the notch opens the panel smoothly within about 100 ms.
+- Hovering the notch itself opens the panel. The hit is the camera housing, capped at about 220 pt wide, with no extra padding.
+- Clicks, drags, and mouse-up do not count as hover. A click on the notch or on a live peek does open the panel.
+- Mission Control and the desktop switcher close the panel and do not reopen it.
 - Moving the pointer away closes it after about 300 ms. Coming back inside cancels the close.
 - When collapsed, you can click a browser tab or menu bar item directly under the expanded area.
 - When expanded, clicking inside the panel does not activate or focus another app.
@@ -136,4 +138,6 @@ Hovering the notch expands the panel with a spring animation. Moving the pointer
 
 - Global monitor handlers can run off the main thread in strict concurrency. Keep `MainActor.assumeIsolated` (they are delivered on the main thread) or hop with `Task { @MainActor in ... }`.
 - If hover never triggers in fullscreen apps, confirm `.fullScreenAuxiliary` is set and the panel level is high enough.
+- Do not run hover logic on `leftMouseDragged` or `leftMouseUp`. A click in another app, or picking a desktop, was opening the panel. Ignore hover while a mouse button is down, and while `DesktopSwitcher` sees Mission Control or the Dock as frontmost.
+- The live peek is wider than the notch. Hovering that wider pill must not expand; a click on it does.
 - Remember to call `stop()` on quit (step 07).

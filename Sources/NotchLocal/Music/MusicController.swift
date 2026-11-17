@@ -10,6 +10,7 @@ final class MusicController {
     private(set) var isScrubbing = false
     private(set) var scrubPosition: Double = 0
     var onNowPlayingChange: ((NowPlaying?) -> Void)?
+    var onRevealPlayer: (() -> Void)?
 
     private let scripts = AppleScriptRunner()
     private let mediaRemote = MediaRemoteClient.make()
@@ -131,14 +132,39 @@ final class MusicController {
 
     func revealPlayer() {
         guard let source = nowPlaying?.source else { return }
-        let running = NSRunningApplication.runningApplications(withBundleIdentifier: source.bundleIdentifier)
-        if let app = running.first {
-            app.activate()
-            return
+        let bundleID = source.bundleIdentifier
+        let displayName = source.displayName
+        let scriptable = source.usesAppleScript
+        onRevealPlayer?()
+
+        let restoreAccessory = NSApp.activationPolicy() == .accessory
+        if restoreAccessory {
+            NSApp.setActivationPolicy(.regular)
         }
-        guard source.usesAppleScript else { return }
-        Task {
-            _ = await scripts.run("tell application \"\(source.displayName)\" to activate")
+
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            let config = NSWorkspace.OpenConfiguration()
+            config.activates = true
+            NSWorkspace.shared.openApplication(at: url, configuration: config) { _, _ in
+                Task { @MainActor in
+                    if restoreAccessory {
+                        NSApp.setActivationPolicy(.accessory)
+                    }
+                }
+            }
+        } else if restoreAccessory {
+            NSApp.setActivationPolicy(.accessory)
+        }
+
+        if let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
+            app.unhide()
+            _ = app.activate(from: .current, options: [.activateAllWindows])
+        }
+
+        if scriptable {
+            Task {
+                _ = await scripts.run("tell application \"\(displayName)\" to activate")
+            }
         }
     }
 
@@ -151,7 +177,7 @@ final class MusicController {
     }
 
     private func applyRemote(_ info: MediaRemoteInfo, fetchArtwork: Bool) async {
-        let bundle = info.parentBundleIdentifier ?? info.bundleIdentifier
+        let bundle = MusicSource.launchable(child: info.bundleIdentifier, parent: info.parentBundleIdentifier)
         let source = MusicSource.named(bundleIdentifier: bundle)
         let playing = NowPlaying(
             source: source,

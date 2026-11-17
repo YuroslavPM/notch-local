@@ -29,7 +29,7 @@ The collapsed panel sets `ignoresMouseEvents = true` so clicks pass through to t
 The working sequence is:
 
 1. Global `.leftMouseDragged` (already in `MouseMonitor`) plus `NSPasteboard(name: .drag)` to detect a **file** drag.
-2. Expand as soon as the pointer enters a **drop magnet** around the notch (taller than the hover hit, about 80 pt below the camera).
+2. Expand only after the pointer has moved and enters a **small drop magnet** around the camera (about 16 pt wider and 28 pt below). Do not use the full expanded panel as the magnet — that opens the notch while clicking other apps.
 3. Turn `ignoresMouseEvents` **off** while expanded so the drop can land.
 4. Hold expanded until `.leftMouseUp`, even if the pointer briefly leaves the panel.
 5. Accept the drop on an AppKit view registered for `.fileURL`. Persist bookmarks. Render icons in SwiftUI.
@@ -44,7 +44,7 @@ Do not copy Boring Notch. Public APIs only: `NSPasteboard`, `NSDraggingInfo`, `N
 
 1. **Drag-hold expand.** Add `.leftMouseUp` to `MouseMonitor`. When the drag pasteboard has files (`public.file-url` or Finder's `NSFilenamesPboardType`) and the pointer is inside `geometry.dropMagnetRect`, call `viewModel.beginFileDrag()`. That expands, sets `isFileDragActive = true`, and skips `scheduleCollapse` until `endFileDrag()` on mouse-up. Snapshot the file URLs during the drag and add them on mouse-up over the panel — a click-through `NSPanel` often never receives AppKit `performDragOperation`. `AppDelegate` already sets `ignoresMouseEvents = (state != .expanded)`; keep that.
 
-2. **Geometry.** `NotchGeometry.expandedSize` is 520×360. Add `dropMagnetRect`: same width as the expanded panel, from the top of the screen down through the shelf, plus ~80 pt below so the panel opens before the cursor arrives. Music and calendar layout stay the same; the shelf sits under the divider as a compact strip.
+2. **Geometry.** `NotchGeometry.expandedSize` is 520×320. `dropMagnetRect` is the camera housing plus about 16 pt to each side and 28 pt below. Music and calendar layout stay the same; the shelf sits under the divider as a compact strip.
 
 3. **TrayItem / FileTrayStore.** One type per file.
    - `TrayItem`: `id: UUID`, `bookmark: Data`, `name: String`, `addedAt: Date`.
