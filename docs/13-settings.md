@@ -16,13 +16,13 @@ A Settings window from the menu bar: launch at login, hover delay, and toggles f
 
 ## Steps
 
-1. **SettingsStore** (`@Observable`, `@MainActor`). UserDefaults keys under `notchlocal.`. Properties: `launchAtLogin`, `hoverDelayMs` (0…400), `showMusic`, `showCalendar`, `showTray`, `showClipboard`, `showStatus`, `showHUD`. Default all widgets on, delay 0.
+1. **SettingsStore** (`@Observable`, `@MainActor`). UserDefaults keys under `notchlocal.`. Properties: `launchAtLogin`, `hoverDelayMs` (0…400), `showMusic`, `showCalendar`, `showTray`, `showClipboard`, `showStatus`, `showHUD`, `showMenuBarIcon`. Default all widgets and the menu bar icon on, delay 0.
 
 2. **Launch at login.** `ServiceManagement` `SMAppService.mainApp.register()` / `unregister()`. Read `SMAppService.mainApp.status == .enabled` on launch. The binary must be the `.app` from `make run`, not `swift run`.
 
 3. **Settings window.** Dedicated `NSPanel` / `NSWindow`, not a sheet on the notch (the notch is status-bar level). Switch to `.regular` while it is open, `NSApp.activate()`, restore `.accessory` on close. Center on `visibleFrame`.
 
-4. **Menu.** Menu bar: Settings…, Restart, Quit.
+4. **Menu.** Status item: Settings…, Hide Menu Bar Icon, Restart, Quit. Hiding removes that item so other menu bar apps have the space. The expanded notch keeps a gear that opens Settings, so the icon can be turned back on.
 
 5. **Hover delay.** `MouseMonitor` waits `hoverDelayMs` before `expand()` when entering the collapsed notch. Cancel the wait if the pointer leaves.
 

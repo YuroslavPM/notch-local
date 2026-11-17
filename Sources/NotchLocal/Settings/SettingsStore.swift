@@ -35,6 +35,15 @@ final class SettingsStore {
         didSet { defaults.set(showHUD, forKey: Keys.showHUD) }
     }
 
+    var showMenuBarIcon: Bool {
+        didSet {
+            defaults.set(showMenuBarIcon, forKey: Keys.showMenuBarIcon)
+            onMenuBarIconChange?()
+        }
+    }
+
+    var onMenuBarIconChange: (() -> Void)?
+
     var launchAtLogin: Bool {
         didSet { applyLaunchAtLogin() }
     }
@@ -50,6 +59,7 @@ final class SettingsStore {
         static let showClipboard = "notchlocal.showClipboard"
         static let showStatus = "notchlocal.showStatus"
         static let showHUD = "notchlocal.showHUD"
+        static let showMenuBarIcon = "notchlocal.showMenuBarIcon"
     }
 
     private init() {
@@ -60,6 +70,7 @@ final class SettingsStore {
         showClipboard = defaults.object(forKey: Keys.showClipboard) as? Bool ?? true
         showStatus = defaults.object(forKey: Keys.showStatus) as? Bool ?? true
         showHUD = defaults.object(forKey: Keys.showHUD) as? Bool ?? true
+        showMenuBarIcon = defaults.object(forKey: Keys.showMenuBarIcon) as? Bool ?? true
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 

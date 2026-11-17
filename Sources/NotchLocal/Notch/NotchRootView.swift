@@ -9,6 +9,7 @@ struct NotchRootView: View {
     var batteryMonitor: BatteryMonitor
     var focusMonitor: FocusMonitor
     var settings: SettingsStore
+    var onOpenSettings: () -> Void
 
     @Namespace private var glassNamespace
 
@@ -107,8 +108,20 @@ struct NotchRootView: View {
 
     private var expandedContent: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if settings.showStatus {
-                StatusBarView(battery: batteryMonitor, focus: focusMonitor)
+            HStack(spacing: 8) {
+                if settings.showStatus {
+                    StatusBarView(battery: batteryMonitor, focus: focusMonitor)
+                }
+                Spacer(minLength: 0)
+                Button(action: onOpenSettings) {
+                    Image(systemName: "gearshape")
+                        .font(.caption.weight(.semibold))
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white.opacity(0.85))
+                .help("Settings")
             }
             if settings.showMusic || settings.showCalendar {
                 HStack(alignment: .top, spacing: 12) {

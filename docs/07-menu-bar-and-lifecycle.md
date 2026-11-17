@@ -67,4 +67,4 @@ A menu bar icon with Restart and Quit, a single running instance, and a clean sh
 ## Pitfalls
 
 - Restart combined with the single-instance check is the classic loop or self-kill bug. Test it explicitly.
-- If the menu bar is crowded, the icon may be hidden behind the notch itself. That is a macOS limitation; hold Cmd and drag other icons to make room.
+- If the menu bar is crowded, turn off **Show menu bar icon** in Settings. Open Settings again from the gear in the expanded notch.

@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mediaKeyMonitor: MediaKeyMonitor?
     private var settingsWindow: SettingsWindowController?
     private var screenObserver: NSObjectProtocol?
+    private var statusItem: NSStatusItem?
     private let settings = SettingsStore.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -56,7 +57,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         settingsWindow = SettingsWindowController(store: settings)
+        settings.onMenuBarIconChange = { [weak self] in
+            self?.syncStatusItem()
+        }
+        syncStatusItem()
         layoutPanel()
+        closeEmptyWindows()
+        Task { @MainActor in
+            self.closeEmptyWindows()
+        }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        closeEmptyWindows()
+        return false
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -75,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         panel?.close()
         panel = nil
+        if let statusItem {
+            NSStatusBar.system.removeStatusItem(statusItem)
+            self.statusItem = nil
+        }
     }
 
     func restart() {
@@ -91,6 +109,61 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func openSettings() {
         settingsWindow?.show()
+    }
+
+    private func syncStatusItem() {
+        guard settings.showMenuBarIcon else {
+            if let statusItem {
+                NSStatusBar.system.removeStatusItem(statusItem)
+                self.statusItem = nil
+            }
+            return
+        }
+        guard statusItem == nil else { return }
+
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        let image = NSImage(systemSymbolName: "rectangle.topthird.inset.filled", accessibilityDescription: "NotchLocal")
+        image?.isTemplate = true
+        item.button?.image = image
+
+        let menu = NSMenu()
+        menu.addItem(menuItem("Settings…", action: #selector(showSettingsFromMenu), key: ","))
+        menu.addItem(menuItem("Hide Menu Bar Icon", action: #selector(hideMenuBarIconFromMenu), key: ""))
+        menu.addItem(.separator())
+        menu.addItem(menuItem("Restart", action: #selector(restartFromMenu), key: ""))
+        menu.addItem(.separator())
+        menu.addItem(menuItem("Quit NotchLocal", action: #selector(quitFromMenu), key: "q"))
+        item.menu = menu
+        statusItem = item
+    }
+
+    private func menuItem(_ title: String, action: Selector, key: String) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
+        item.target = self
+        return item
+    }
+
+    @objc private func showSettingsFromMenu() {
+        openSettings()
+    }
+
+    @objc private func hideMenuBarIconFromMenu() {
+        settings.showMenuBarIcon = false
+    }
+
+    @objc private func restartFromMenu() {
+        restart()
+    }
+
+    @objc private func quitFromMenu() {
+        NSApp.terminate(nil)
+    }
+
+    private func closeEmptyWindows() {
+        for window in NSApp.windows where window !== panel {
+            guard window.title != "NotchLocal Settings" else { continue }
+            window.orderOut(nil)
+        }
     }
 
     private func shouldYieldToExistingInstance() -> Bool {
@@ -265,7 +338,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 clipboardController: clipboard,
                 batteryMonitor: battery,
                 focusMonitor: focus,
-                settings: settings
+                settings: settings,
+                onOpenSettings: { [weak self] in
+                    self?.openSettings()
+                }
             )
         )
         hostingView.wantsLayer = true

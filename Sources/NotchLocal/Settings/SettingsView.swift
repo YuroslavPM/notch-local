@@ -7,6 +7,7 @@ struct SettingsView: View {
         Form {
             Section("General") {
                 Toggle("Open at login", isOn: bind(\.launchAtLogin))
+                Toggle("Show menu bar icon", isOn: bind(\.showMenuBarIcon))
                 HStack {
                     Text("Hover delay")
                     Slider(value: bind(\.hoverDelayMs), in: 0...400, step: 50)
@@ -25,7 +26,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 380)
+        .frame(width: 420, height: 420)
         .padding(8)
     }
 

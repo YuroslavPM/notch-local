@@ -6,14 +6,9 @@ struct NotchLocalApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra("NotchLocal", systemImage: "rectangle.topthird.inset.filled") {
-            Button("Settings…") { appDelegate.openSettings() }
-                .keyboardShortcut(",")
-            Divider()
-            Button("Restart") { appDelegate.restart() }
-            Divider()
-            Button("Quit NotchLocal") { NSApp.terminate(nil) }
-                .keyboardShortcut("q")
+        // Keeps SwiftUI happy without opening a window. The real menu is the status item.
+        MenuBarExtra("NotchLocal", systemImage: "rectangle.topthird.inset.filled", isInserted: .constant(false)) {
+            EmptyView()
         }
     }
 }
