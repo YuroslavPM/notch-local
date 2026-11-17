@@ -34,7 +34,7 @@ On first use macOS will ask for:
 - **Automation** (Spotify / Music) to read and control playback
 - **Focus** (optional) to show Do Not Disturb in the notch
 
-Open **Settings…** from the menu bar icon for launch at login, hover delay, and widget toggles.
+Open **Settings…** from the menu bar icon, or the gear in the expanded notch, for launch at login, hover delay, widget toggles, and hiding the menu bar icon.
 
 If you denied one, re-enable it in System Settings > Privacy & Security.
 
